@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -24,15 +25,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, CheckCircle2, Search } from "lucide-react";
+import { Loader2, Sparkles, CheckCircle2, ShieldAlert } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
+import { useFirestore } from "@/firebase";
+import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 const formSchema = z.object({
   idNumber: z.string().min(5, { message: "Institutional ID or Email is required" }),
   fullName: z.string().min(2, { message: "Full name is required" }),
   purpose: z.string().min(1, { message: "Please select a purpose of visit" }),
   customPurpose: z.string().optional(),
+  college: z.string().min(1, { message: "College/Office is required" }),
 });
 
 const STANDARD_PURPOSES = [
@@ -46,12 +52,26 @@ const STANDARD_PURPOSES = [
   "Other"
 ];
 
+const COLLEGES = [
+  "College of Computing",
+  "College of Arts",
+  "College of Science",
+  "College of Engineering",
+  "College of Business",
+  "College of Nursing",
+  "Graduate Studies",
+  "Staff/Faculty",
+  "Visitor"
+];
+
 export function VisitorSignInForm() {
+  const db = useFirestore();
   const [isLoading, setIsLoading] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [showCustom, setShowCustom] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,10 +80,9 @@ export function VisitorSignInForm() {
       fullName: "",
       purpose: "",
       customPurpose: "",
+      college: "",
     },
   });
-
-  const purpose = form.watch("purpose");
 
   async function handleAiAnalysis() {
     const customText = form.getValues("customPurpose");
@@ -79,12 +98,6 @@ export function VisitorSignInForm() {
       setIsAiLoading(true);
       const result = await suggestVisitorPurpose(customText);
       setAiSuggestions(result.suggestions);
-      if (result.primaryCategory) {
-        // If it matches a standard category, select it
-        if (STANDARD_PURPOSES.includes(result.primaryCategory)) {
-          form.setValue("purpose", result.primaryCategory);
-        }
-      }
     } catch (error) {
       console.error("AI Error:", error);
     } finally {
@@ -93,15 +106,76 @@ export function VisitorSignInForm() {
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!db) return;
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    setSubmitted(true);
-    toast({
-      title: "Successfully Logged In",
-      description: `Welcome, ${values.fullName}. Your visit has been recorded.`,
-    });
+    setIsBlocked(false);
+
+    try {
+      // 1. Check Block List first
+      const blockRef = collection(db, "blockList");
+      const blockQuery = query(blockRef, where("institutionalId", "==", values.idNumber));
+      const blockSnap = await getDocs(blockQuery);
+
+      if (!blockSnap.empty) {
+        setIsBlocked(true);
+        setIsLoading(false);
+        toast({
+          variant: "destructive",
+          title: "Access Denied",
+          description: "Your ID is currently on the restricted access list.",
+        });
+        return;
+      }
+
+      // 2. Log Visitor
+      const visitorData = {
+        name: values.fullName,
+        institutionalId: values.idNumber,
+        college: values.college,
+        purpose: values.purpose === "Other" ? values.customPurpose : values.purpose,
+        timeIn: new Date().toISOString(),
+        status: "Active"
+      };
+
+      const visitorsRef = collection(db, "visitors");
+      addDoc(visitorsRef, visitorData).catch(async (e) => {
+        const err = new FirestorePermissionError({
+          path: "visitors",
+          operation: "create",
+          requestResourceData: visitorData
+        });
+        errorEmitter.emit("permission-error", err);
+      });
+
+      setSubmitted(true);
+      toast({
+        title: "Successfully Logged In",
+        description: `Welcome, ${values.fullName}.`,
+      });
+    } catch (error) {
+      console.error("Submit Error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  if (isBlocked) {
+    return (
+      <Card className="border-destructive bg-destructive/5">
+        <CardContent className="p-8 flex flex-col items-center text-center space-y-6">
+          <div className="w-16 h-16 bg-destructive rounded-full flex items-center justify-center">
+            <ShieldAlert className="w-10 h-10 text-white" />
+          </div>
+          <div className="space-y-2">
+            <h4 className="text-2xl font-bold text-destructive">Entry Restricted</h4>
+            <p className="text-muted-foreground">Please proceed to the Main Library Office for assistance regarding your account status.</p>
+          </div>
+          <Button onClick={() => { setIsBlocked(false); form.reset(); }} variant="outline">
+            Try another ID
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
 
   if (submitted) {
@@ -125,7 +199,7 @@ export function VisitorSignInForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="idNumber"
@@ -148,6 +222,29 @@ export function VisitorSignInForm() {
               <FormControl>
                 <Input placeholder="John Doe" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="college"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>College / Office</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your college" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {COLLEGES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -208,9 +305,6 @@ export function VisitorSignInForm() {
                       {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-accent" />}
                     </Button>
                   </div>
-                  <FormDescription className="text-[10px]">
-                    Type and click Sparkles for AI suggestions.
-                  </FormDescription>
                 </FormItem>
               )}
             />
@@ -222,10 +316,7 @@ export function VisitorSignInForm() {
                     key={suggestion} 
                     variant="secondary" 
                     className="cursor-pointer hover:bg-accent hover:text-white transition-colors text-[10px] py-0.5"
-                    onClick={() => {
-                      form.setValue("purpose", "Other");
-                      form.setValue("customPurpose", suggestion);
-                    }}
+                    onClick={() => form.setValue("customPurpose", suggestion)}
                   >
                     {suggestion}
                   </Badge>
@@ -243,7 +334,7 @@ export function VisitorSignInForm() {
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Signing in...
+              Verifying...
             </>
           ) : (
             "Complete Sign-in"

@@ -1,0 +1,44 @@
+
+{
+  "entities": {
+    "Visitor": {
+      "title": "Visitor",
+      "description": "A record of a library visitor's entry.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "institutionalId": { "type": "string" },
+        "college": { "type": "string" },
+        "purpose": { "type": "string" },
+        "timeIn": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["Active", "Logged Out"] }
+      },
+      "required": ["name", "institutionalId", "purpose", "timeIn", "status"]
+    },
+    "BlockedUser": {
+      "title": "Blocked User",
+      "description": "An individual restricted from entering the library.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "institutionalId": { "type": "string" },
+        "reason": { "type": "string" },
+        "dateBlocked": { "type": "string", "format": "date" }
+      },
+      "required": ["name", "institutionalId", "reason", "dateBlocked"]
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "/visitors/{visitorId}": {
+      "schema": "#/backend/entities/Visitor",
+      "description": "Collection of all visitor entry logs."
+    },
+    "/blockList/{blockId}": {
+      "schema": "#/backend/entities/BlockedUser",
+      "description": "Collection of restricted individuals."
+    }
+  }
+}
