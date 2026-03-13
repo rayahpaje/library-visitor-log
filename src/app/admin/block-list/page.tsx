@@ -106,7 +106,7 @@ export default function BlockListManagement() {
   const handleRemoveBlock = (user: any) => {
     if (!db) return;
     
-    // Check if it's a real Firestore document ID (not a mock ID starting with 'b')
+    // Check if it's a real Firestore document ID
     const isRealDoc = user.id && !user.id.toString().startsWith('b');
     
     if (isRealDoc) {
@@ -123,7 +123,7 @@ export default function BlockListManagement() {
           errorEmitter.emit('permission-error', permissionError);
         });
     } else {
-      // For mock data, we just track the removal in state for this session
+      // For mock data, we track the removal in state for this session
       setRemovedIds(prev => new Set([...prev, user.id]));
       toast({ title: "Access Restored", description: `${user.name} is no longer restricted.` });
     }
@@ -139,14 +139,14 @@ export default function BlockListManagement() {
               <Ban className="w-8 h-8 text-destructive" />
               Security Block List
             </h1>
-            <p className="text-muted-foreground">Manage restricted students and maintain library safety.</p>
+            <p className="text-muted-foreground">Manage library access restrictions and safety.</p>
           </div>
           
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="bg-destructive hover:bg-destructive/90 text-white gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs shadow-lg rounded-none border-b-4 border-[#B00000]">
                 <Plus className="w-4 h-4" />
-                Manually Block
+                Manually Block Access
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] rounded-none border-none shadow-2xl">
@@ -199,9 +199,7 @@ export default function BlockListManagement() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <Card className="lg:col-span-2 border-none shadow-sm rounded-none overflow-hidden bg-white">
             <CardHeader className="pb-4 bg-white border-b flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Restricted Students</CardTitle>
-              </div>
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Restricted Individuals</CardTitle>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
@@ -221,24 +219,24 @@ export default function BlockListManagement() {
                 <Table>
                   <TableHeader className="bg-[#F8F9FA]">
                     <TableRow>
-                      <TableHead className="text-[10px] font-bold uppercase py-4">Student</TableHead>
-                      <TableHead className="text-[10px] font-bold uppercase">Date Blocked</TableHead>
-                      <TableHead className="text-[10px] font-bold uppercase text-right">Actions</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase py-4">Student Info</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase">Date Restricted</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase text-right pr-6">Management</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredBlockedUsers.map((user: any) => (
                       <TableRow key={user.id || user.name} className="group hover:bg-muted/30">
-                        <TableCell>
+                        <TableCell className="py-4">
                           <div className="font-bold text-sm">{user.name}</div>
                           <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{user.institutionalId}</div>
                         </TableCell>
                         <TableCell className="text-xs font-medium">{user.dateBlocked}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right pr-6">
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="text-primary hover:bg-primary/10 gap-2 border-primary h-8 px-4 font-bold text-[10px] uppercase rounded-none"
+                            className="text-primary hover:bg-primary/5 gap-2 border-primary h-8 px-4 font-bold text-[10px] uppercase rounded-none"
                             onClick={() => handleRemoveBlock(user)}
                           >
                             <UserCheck className="w-3.5 h-3.5" />
@@ -257,12 +255,12 @@ export default function BlockListManagement() {
             <Card className="border-none bg-primary text-white shadow-lg overflow-hidden relative rounded-none">
               <UserX className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10" />
               <CardHeader>
-                <CardTitle className="text-sm font-bold uppercase tracking-widest">Policy Enforcement</CardTitle>
-                <CardDescription className="text-white/70 text-xs">Blocked students cannot access the library.</CardDescription>
+                <CardTitle className="text-xs font-bold uppercase tracking-widest">Policy Enforcement</CardTitle>
+                <CardDescription className="text-white/70 text-xs">Restricted students are automatically denied entry.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-4 bg-white/10 border-l-2 border-white/30 text-xs font-medium">
-                  <strong>Verification:</strong> Entry system checks this list automatically.
+                  <strong>Validation:</strong> The system verifies every student ID against this database in real-time.
                 </div>
               </CardContent>
             </Card>
