@@ -5,7 +5,6 @@ import Link from "next/link";
 import { 
   LayoutDashboard, 
   Users, 
-  Ban, 
   LogOut, 
   BookOpen,
   Settings
@@ -16,7 +15,6 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Visitor Logs", href: "/admin/logs", icon: Users },
-  { name: "Block List", href: "/admin/block-list", icon: Ban },
 ];
 
 export function AdminSidebar() {

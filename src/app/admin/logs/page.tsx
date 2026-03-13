@@ -7,9 +7,7 @@ import {
   Users, 
   Search, 
   Download,
-  Loader2,
-  MoreHorizontal,
-  Ban
+  Loader2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -30,18 +28,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, limit, addDoc } from "firebase/firestore";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import { toast } from "@/hooks/use-toast";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
+import { collection, query, orderBy, limit } from "firebase/firestore";
 import { MOCK_VISITORS } from "@/lib/mock-data";
-import { cn } from "@/lib/utils";
 
 export default function VisitorLogs() {
   const db = useFirestore();
@@ -58,17 +46,7 @@ export default function VisitorLogs() {
     return query(collection(db, "visitors"), orderBy("timeIn", "desc"), limit(100));
   }, [db]);
 
-  const blockListQuery = useMemo(() => {
-    if (!db) return null;
-    return collection(db, "blockList");
-  }, [db]);
-
   const { data: dbLogs, loading } = useCollection(logsQuery);
-  const { data: dbBlockedUsers } = useCollection(blockListQuery);
-
-  const blockedUserIds = useMemo(() => {
-    return new Set((dbBlockedUsers || []).map(u => u.institutionalId));
-  }, [dbBlockedUsers]);
 
   const logs = useMemo(() => {
     const firestoreData = dbLogs || [];
@@ -84,30 +62,6 @@ export default function VisitorLogs() {
       return matchesSearch && matchesCollege;
     });
   }, [logs, searchTerm, filterCollege]);
-
-  const handleBlockUser = (visitor: any) => {
-    if (!db) return;
-    
-    const blockData = {
-      name: visitor.name,
-      institutionalId: visitor.institutionalId,
-      reason: "Administrative Restriction",
-      dateBlocked: new Date().toISOString().split('T')[0]
-    };
-
-    addDoc(collection(db, "blockList"), blockData)
-      .then(() => {
-        toast({ title: "User Blocked", description: `${visitor.name} has been restricted.` });
-      })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: "blockList",
-          operation: "create",
-          requestResourceData: blockData,
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
-      });
-  };
 
   const formatTime = (isoString: string) => {
     if (!isClient) return "--:--";
@@ -189,57 +143,34 @@ export default function VisitorLogs() {
                     <TableHead className="font-bold text-black text-center uppercase text-[10px] tracking-widest">College</TableHead>
                     <TableHead className="font-bold text-black text-center uppercase text-[10px] tracking-widest">Time In</TableHead>
                     <TableHead className="font-bold text-black text-center uppercase text-[10px] tracking-widest">Status</TableHead>
-                    <TableHead className="text-right font-bold text-black uppercase text-[10px] tracking-widest">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredLogs.map((log: any) => {
-                    const isBlocked = blockedUserIds.has(log.institutionalId);
-                    return (
-                      <TableRow key={log.id || log.name} className="hover:bg-gray-50 border-b">
-                        <TableCell className="font-bold text-primary py-4">{log.name}</TableCell>
-                        <TableCell className="text-center font-medium">{log.institutionalId}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className="font-semibold border-primary/20 text-primary rounded-none">
-                            {log.college}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="font-bold">{formatTime(log.timeIn)}</div>
-                          <div className="text-[10px] text-muted-foreground font-medium uppercase">{formatDate(log.timeIn)}</div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge 
-                            className={cn(
-                              "px-4 rounded-none font-bold uppercase text-[10px] tracking-widest border-none",
-                              isBlocked 
-                                ? "bg-destructive/10 text-destructive"
-                                : "bg-[#C8E6C9] text-[#2E7D32]"
-                            )}
-                          >
-                            {isBlocked ? "BLOCKED" : "ACTIVE"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {!isBlocked && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="rounded-none">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="rounded-none border-none shadow-xl">
-                                <DropdownMenuItem onClick={() => handleBlockUser(log)} className="text-destructive font-bold text-xs uppercase tracking-widest cursor-pointer">
-                                  <Ban className="w-4 h-4 mr-2" />
-                                  Block Access
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                  {filteredLogs.map((log: any) => (
+                    <TableRow key={log.id || log.name} className="hover:bg-gray-50 border-b">
+                      <TableCell className="font-bold text-primary py-4">{log.name}</TableCell>
+                      <TableCell className="text-center font-medium">{log.institutionalId}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="font-semibold border-primary/20 text-primary rounded-none">
+                          {log.college}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="font-bold">{formatTime(log.timeIn)}</div>
+                        <div className="text-[10px] text-muted-foreground font-medium uppercase">{formatDate(log.timeIn)}</div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge 
+                          className={cn(
+                            "px-4 rounded-none font-bold uppercase text-[10px] tracking-widest border-none",
+                            "bg-[#C8E6C9] text-[#2E7D32]"
                           )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                        >
+                          ACTIVE
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             )}

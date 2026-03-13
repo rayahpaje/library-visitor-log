@@ -54,11 +54,6 @@ export function SiteHeader() {
               LOGS
             </Button>
           </Link>
-          <Link href="/admin/block-list">
-            <Button variant="ghost" className="text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs hidden md:inline-flex">
-              SECURITY
-            </Button>
-          </Link>
           <Link href="/">
             <Button variant="outline" className="bg-transparent border-white/50 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs rounded-full h-9 px-4">
               VISITOR PORTAL

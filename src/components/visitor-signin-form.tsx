@@ -21,11 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { useFirestore } from "@/firebase";
-import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { collection, addDoc } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { cn } from "@/lib/utils";
@@ -60,7 +60,6 @@ export function VisitorSignInForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginMethod, setLoginMethod] = useState<"tap" | "email">("tap");
   const [submitted, setSubmitted] = useState(false);
-  const [isBlocked, setIsBlocked] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,15 +76,6 @@ export function VisitorSignInForm() {
     setIsLoading(true);
 
     try {
-      const blockQuery = query(collection(db, "blockList"), where("institutionalId", "==", values.idNumber));
-      const blockSnap = await getDocs(blockQuery);
-
-      if (!blockSnap.empty) {
-        setIsBlocked(true);
-        setIsLoading(false);
-        return;
-      }
-
       const visitorData = {
         name: values.fullName,
         institutionalId: values.idNumber,
@@ -110,23 +100,6 @@ export function VisitorSignInForm() {
     } finally {
       setIsLoading(false);
     }
-  }
-
-  if (isBlocked) {
-    return (
-      <Card className="border-none bg-white/10 text-white">
-        <CardContent className="p-8 flex flex-col items-center text-center space-y-6">
-          <ShieldAlert className="w-12 h-12 text-destructive" />
-          <div className="space-y-2">
-            <h4 className="text-xl font-bold uppercase">Entry Restricted</h4>
-            <p className="text-white/80 text-sm">Access denied. Please proceed to the Main Circulation Desk for assistance.</p>
-          </div>
-          <Button onClick={() => { setIsBlocked(false); form.reset(); }} variant="outline" className="text-primary border-white bg-white hover:bg-white/90 rounded-none px-8 font-bold uppercase text-xs">
-            Try another ID
-          </Button>
-        </CardContent>
-      </Card>
-    );
   }
 
   if (submitted) {
