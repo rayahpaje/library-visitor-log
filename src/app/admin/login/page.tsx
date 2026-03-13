@@ -27,7 +27,7 @@ export default function AdminLogin() {
       <main className="flex-1 flex flex-col items-center justify-center p-6 pb-20">
         <div className="w-full max-w-[550px] bg-[#537D6B] rounded-3xl shadow-2xl p-10 md:p-14 text-white text-center">
           <div className="space-y-6 mb-10">
-            <h2 className="text-3xl font-bold tracking-tight">WELCOME TO NEU LIBRARY!</h2>
+            <h2 className="text-3xl font-bold tracking-tight uppercase">WELCOME TO NEU LIBRARY!</h2>
             <div className="space-y-2">
               <h3 className="text-2xl font-bold tracking-wide">ADMIN ACCESS</h3>
               <p className="text-white/80 text-sm">Enter your staff credentials to manage Library Log</p>
@@ -40,7 +40,8 @@ export default function AdminLogin() {
               <Input 
                 id="username" 
                 type="text" 
-                className="bg-[#CED8D3] border-none h-12 rounded-lg text-primary focus-visible:ring-0 focus-visible:ring-offset-0" 
+                className="bg-[#CED8D3] border-none h-12 rounded-lg text-primary focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-primary/40" 
+                placeholder="Staff ID or Username"
                 required 
               />
             </div>
@@ -49,21 +50,22 @@ export default function AdminLogin() {
               <Input 
                 id="password" 
                 type="password" 
-                className="bg-[#CED8D3] border-none h-12 rounded-lg text-primary focus-visible:ring-0 focus-visible:ring-offset-0" 
+                className="bg-[#CED8D3] border-none h-12 rounded-lg text-primary focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-primary/40" 
+                placeholder="••••••••"
                 required 
               />
             </div>
             
             <Button 
               type="submit" 
-              className="w-full h-12 bg-[#004D40] hover:bg-[#003d33] text-white font-bold rounded-lg shadow-md transition-all mt-4" 
+              className="w-full h-12 bg-[#004D40] hover:bg-[#003d33] text-white font-bold rounded-lg shadow-md transition-all mt-4 uppercase tracking-widest text-xs" 
               disabled={isLoading}
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Log in to Dashboard"}
             </Button>
           </form>
 
-          <p className="mt-10 text-white/70 text-xs font-medium">
+          <p className="mt-10 text-white/70 text-[10px] font-medium uppercase tracking-widest">
             Protected System. Unauthorized access is monitored.
           </p>
         </div>

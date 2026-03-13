@@ -86,6 +86,7 @@ export default function AdminDashboard() {
     const isAlreadyBlocked = blockedList.find(b => b.institutionalId === visitor.institutionalId);
     if (isAlreadyBlocked) return;
 
+    // Reset session unblock if we're re-blocking
     setUnblockedIds(prev => prev.filter(id => id !== visitor.institutionalId));
 
     const blockData = {
@@ -100,10 +101,10 @@ export default function AdminDashboard() {
   };
 
   const handleUnblock = async (blockedUser: any) => {
-    if (!db) return;
-    
-    // Immediate UI removal
+    // Immediate UI removal for session persistence (especially for mock data)
     setUnblockedIds(prev => [...prev, blockedUser.institutionalId]);
+
+    if (!db) return;
 
     // Firestore removal
     const q = query(collection(db, "blockList"), where("institutionalId", "==", blockedUser.institutionalId));
@@ -128,6 +129,7 @@ export default function AdminDashboard() {
       <SiteHeader />
       
       <main className="flex-1 p-8 max-w-[1400px] mx-auto w-full space-y-8">
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="border-none shadow-[0_4px_10px_rgba(0,0,0,0.05)] rounded-xl bg-white overflow-hidden">
             <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
@@ -170,7 +172,9 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
+        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          {/* Left Column: Activity Logs */}
           <div className="lg:col-span-2 space-y-8">
             <Card className="border border-black/5 shadow-[0_4px_15px_rgba(0,0,0,0.05)] rounded-xl bg-white">
               <div className="p-6 border-b border-black/5">
@@ -256,6 +260,7 @@ export default function AdminDashboard() {
             </Card>
           </div>
 
+          {/* Right Column: Block List Management */}
           <div className="space-y-6">
             <Card className="border border-black/5 shadow-[0_4px_15px_rgba(0,0,0,0.05)] rounded-xl bg-white overflow-hidden">
               <div className="p-5 border-b border-black/5">
@@ -273,7 +278,8 @@ export default function AdminDashboard() {
                     {blockedList.map((user) => (
                       <TableRow 
                         key={user.id || user.institutionalId} 
-                        className="hover:bg-muted/10 border-black/5 group"
+                        className="hover:bg-muted/10 border-black/5 group cursor-pointer"
+                        onClick={() => handleUnblock(user)}
                       >
                         <TableCell className="py-4 text-sm font-bold text-black">
                           {user.name}
@@ -283,7 +289,6 @@ export default function AdminDashboard() {
                             variant="ghost" 
                             size="sm"
                             className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider bg-[#FFEBEE] text-[#D32F2F] border border-[#D32F2F]/10 hover:bg-[#D32F2F] hover:text-white rounded-md shadow-[0_2px_5px_rgba(0,0,0,0.1)] transition-all"
-                            onClick={() => handleUnblock(user)}
                           >
                             Unblock
                           </Button>

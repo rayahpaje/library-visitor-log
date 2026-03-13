@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -14,7 +13,7 @@ export function SiteHeader() {
   const logo = PlaceHolderImages.find(img => img.id === "neu-logo");
 
   return (
-    <header className="bg-[#004D40] text-white py-4 px-6 md:px-10 flex items-center justify-between h-20 shadow-md">
+    <header className="bg-[#004D40] text-white py-4 px-6 md:px-10 flex items-center justify-between h-20 shadow-md z-50 sticky top-0">
       <div className="flex items-center gap-4">
         <div className="relative w-14 h-14 bg-white rounded-full flex items-center justify-center overflow-hidden border-2 border-white shadow-lg">
           {logo && (
@@ -35,7 +34,7 @@ export function SiteHeader() {
       </div>
 
       <div className="flex items-center gap-4">
-        {pathname === "/" && (
+        {!isAdminPath && (
           <Link href="/admin/login">
             <Button variant="outline" className="bg-[#3D5C4E] border-none text-white hover:bg-[#324B40] gap-2 rounded-full px-6 font-bold uppercase text-[10px] tracking-widest h-10 shadow-md">
               <UserCircle className="w-4 h-4" />
