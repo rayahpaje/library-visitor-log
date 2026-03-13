@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState } from "react";
@@ -58,7 +57,7 @@ export default function BlockListManagement() {
 
   const filteredBlockedUsers = useMemo(() => {
     if (!blockedUsers) return [];
-    return blockedUsers.filter(user => 
+    return (blockedUsers as any[]).filter(user => 
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       user.institutionalId?.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -112,7 +111,7 @@ export default function BlockListManagement() {
   };
 
   return (
-    <div className="flex bg-[#F8F9FA] min-h-screen">
+    <div className="flex bg-[#F8F9FA] min-h-screen font-body">
       <AdminSidebar />
       <main className="flex-1 p-8 space-y-8 overflow-y-auto">
         <div className="flex justify-between items-center">
@@ -126,7 +125,7 @@ export default function BlockListManagement() {
           
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-destructive hover:bg-destructive/90 text-white gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs shadow-lg">
+              <Button className="bg-destructive hover:bg-destructive/90 text-white gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs shadow-lg rounded-none">
                 <Plus className="w-4 h-4" />
                 Manually Restrict
               </Button>
@@ -147,7 +146,7 @@ export default function BlockListManagement() {
                   <Input 
                     id="name" 
                     placeholder="John Doe" 
-                    className="bg-[#F4F7F5] border-none font-medium h-10"
+                    className="bg-[#F4F7F5] border-none font-medium h-10 rounded-none"
                     value={newBlock.name}
                     onChange={(e) => setNewBlock({...newBlock, name: e.target.value})}
                   />
@@ -157,7 +156,7 @@ export default function BlockListManagement() {
                   <Input 
                     id="id" 
                     placeholder="e.g. 2019-XXXX" 
-                    className="bg-[#F4F7F5] border-none font-medium h-10"
+                    className="bg-[#F4F7F5] border-none font-medium h-10 rounded-none"
                     value={newBlock.institutionalId}
                     onChange={(e) => setNewBlock({...newBlock, institutionalId: e.target.value})}
                   />
@@ -167,7 +166,7 @@ export default function BlockListManagement() {
                   <Textarea 
                     id="reason" 
                     placeholder="Detail the violation or security concern..." 
-                    className="bg-[#F4F7F5] border-none font-medium min-h-[100px]"
+                    className="bg-[#F4F7F5] border-none font-medium min-h-[100px] rounded-none"
                     value={newBlock.reason}
                     onChange={(e) => setNewBlock({...newBlock, reason: e.target.value})}
                   />
@@ -184,7 +183,7 @@ export default function BlockListManagement() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="lg:col-span-2 border-none shadow-sm rounded-none overflow-hidden">
+          <Card className="lg:col-span-2 border-none shadow-sm rounded-none overflow-hidden bg-white">
             <CardHeader className="pb-4 bg-white border-b flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Blocked Visitors</CardTitle>
@@ -194,7 +193,7 @@ export default function BlockListManagement() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   placeholder="Filter blocked users..." 
-                  className="pl-9 w-[240px] h-9 text-xs border-muted-foreground/20" 
+                  className="pl-9 w-[240px] h-9 text-xs border-muted-foreground/20 rounded-none" 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -216,7 +215,7 @@ export default function BlockListManagement() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredBlockedUsers.map((user) => (
+                    {filteredBlockedUsers.map((user: any) => (
                       <TableRow key={user.id} className="group hover:bg-muted/30">
                         <TableCell>
                           <div className="font-bold text-sm">{user.name}</div>
@@ -230,7 +229,7 @@ export default function BlockListManagement() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="text-primary hover:bg-primary/10 gap-2 border-primary h-8 px-4 font-bold text-[10px] uppercase"
+                            className="text-primary hover:bg-primary/10 gap-2 border-primary h-8 px-4 font-bold text-[10px] uppercase rounded-none"
                             onClick={() => handleRemoveBlock(user.id, user.name)}
                           >
                             <UserCheck className="w-3.5 h-3.5" />
@@ -271,12 +270,12 @@ export default function BlockListManagement() {
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-sm rounded-none">
+            <Card className="border-none shadow-sm rounded-none bg-white">
               <CardHeader className="pb-4 border-b">
                 <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-primary">Recent Incident Log</CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
-                {blockedUsers?.slice(0, 5).map((user) => (
+                {filteredBlockedUsers?.slice(0, 5).map((user: any) => (
                   <div key={user.id} className="flex gap-3 items-start border-b border-secondary pb-4 last:border-0 last:pb-0">
                     <div className="p-2 bg-destructive/10 rounded-sm">
                       <AlertTriangle className="w-3 h-3 text-destructive" />
@@ -287,7 +286,7 @@ export default function BlockListManagement() {
                     </div>
                   </div>
                 ))}
-                {(!blockedUsers || blockedUsers.length === 0) && (
+                {(!filteredBlockedUsers || filteredBlockedUsers.length === 0) && (
                   <p className="text-xs text-muted-foreground text-center py-4">No recent records.</p>
                 )}
               </CardContent>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState } from "react";
@@ -32,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, limit, doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, doc, updateDoc, deleteDoc, addDoc } from "firebase/firestore";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -43,7 +42,6 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
-import { MOCK_VISITORS } from "@/lib/mock-data";
 
 export default function VisitorLogs() {
   const db = useFirestore();
@@ -57,18 +55,15 @@ export default function VisitorLogs() {
 
   const { data: dbLogs, loading } = useCollection(logsQuery);
 
-  const logs = useMemo(() => {
-    return dbLogs.length > 0 ? dbLogs : MOCK_VISITORS;
-  }, [dbLogs]);
-
   const filteredLogs = useMemo(() => {
-    return logs.filter(log => {
-      const matchesSearch = log.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           log.institutionalId.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!dbLogs) return [];
+    return (dbLogs as any[]).filter(log => {
+      const matchesSearch = log.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           log.institutionalId?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCollege = filterCollege === "all" || log.college === filterCollege;
       return matchesSearch && matchesCollege;
     });
-  }, [logs, searchTerm, filterCollege]);
+  }, [dbLogs, searchTerm, filterCollege]);
 
   const handleCheckout = (id: string) => {
     if (!db) return;
@@ -105,7 +100,7 @@ export default function VisitorLogs() {
 
   const handleBlockUser = (visitor: any) => {
     if (!db) return;
-    const blockId = visitor.institutionalId.replace(/[^a-zA-Z0-9]/g, '');
+    
     const blockData = {
       name: visitor.name,
       institutionalId: visitor.institutionalId,
@@ -113,14 +108,14 @@ export default function VisitorLogs() {
       dateBlocked: new Date().toISOString().split('T')[0]
     };
 
-    setDoc(doc(db, "blockList", blockId), blockData)
+    addDoc(collection(db, "blockList"), blockData)
       .then(() => {
         toast({ title: "Visitor Restricted", description: `${visitor.name} has been added to the security database.` });
       })
       .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
-          path: `blockList/${blockId}`,
-          operation: "write",
+          path: "blockList",
+          operation: "create",
           requestResourceData: blockData,
         } satisfies SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
@@ -128,7 +123,7 @@ export default function VisitorLogs() {
   };
 
   return (
-    <div className="flex bg-[#F8F9FA] min-h-screen">
+    <div className="flex bg-[#F8F9FA] min-h-screen font-body">
       <AdminSidebar />
       <main className="flex-1 p-8 space-y-8 overflow-y-auto">
         <div className="flex justify-between items-center">
@@ -139,13 +134,13 @@ export default function VisitorLogs() {
             </h1>
             <p className="text-muted-foreground">Comprehensive history of library entries and exits.</p>
           </div>
-          <Button variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/10">
+          <Button variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/10 rounded-none h-10 px-6 font-bold uppercase tracking-wider text-xs">
             <Download className="w-4 h-4" />
             Export CSV
           </Button>
         </div>
 
-        <Card className="border-none shadow-sm rounded-xl overflow-hidden">
+        <Card className="border-none shadow-sm rounded-none overflow-hidden bg-white">
           <CardHeader className="pb-4 bg-white border-b">
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
               <div className="flex items-center gap-4 w-full md:w-auto">
@@ -153,13 +148,13 @@ export default function VisitorLogs() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input 
                     placeholder="Search student name or ID..." 
-                    className="pl-9" 
+                    className="pl-9 rounded-none h-10 border-muted-foreground/20" 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
                 <Select value={filterCollege} onValueChange={setFilterCollege}>
-                  <SelectTrigger className="w-[200px]">
+                  <SelectTrigger className="w-[200px] rounded-none h-10 border-muted-foreground/20">
                     <SelectValue placeholder="Filter by College" />
                   </SelectTrigger>
                   <SelectContent>
@@ -182,7 +177,7 @@ export default function VisitorLogs() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {loading && dbLogs.length === 0 ? (
+            {loading ? (
               <div className="flex justify-center py-24">
                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
               </div>
@@ -190,22 +185,22 @@ export default function VisitorLogs() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-100 hover:bg-gray-100">
-                    <TableHead className="font-bold text-black">Student Name</TableHead>
-                    <TableHead className="font-bold text-black text-center">ID / Email</TableHead>
-                    <TableHead className="font-bold text-black text-center">College / Office</TableHead>
-                    <TableHead className="font-bold text-black text-center">Purpose</TableHead>
-                    <TableHead className="font-bold text-black text-center">Time In</TableHead>
-                    <TableHead className="font-bold text-black text-center">Status</TableHead>
-                    <TableHead className="text-right font-bold text-black">Actions</TableHead>
+                    <TableHead className="font-bold text-black uppercase text-[10px] tracking-widest">Student Name</TableHead>
+                    <TableHead className="font-bold text-black text-center uppercase text-[10px] tracking-widest">ID / Email</TableHead>
+                    <TableHead className="font-bold text-black text-center uppercase text-[10px] tracking-widest">College / Office</TableHead>
+                    <TableHead className="font-bold text-black text-center uppercase text-[10px] tracking-widest">Purpose</TableHead>
+                    <TableHead className="font-bold text-black text-center uppercase text-[10px] tracking-widest">Time In</TableHead>
+                    <TableHead className="font-bold text-black text-center uppercase text-[10px] tracking-widest">Status</TableHead>
+                    <TableHead className="text-right font-bold text-black uppercase text-[10px] tracking-widest">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredLogs.map((log) => (
+                  {filteredLogs.map((log: any) => (
                     <TableRow key={log.id} className="hover:bg-gray-50">
                       <TableCell className="font-bold text-primary">{log.name}</TableCell>
                       <TableCell className="text-center font-medium">{log.institutionalId}</TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="font-semibold border-primary/20 text-primary">
+                        <Badge variant="outline" className="font-semibold border-primary/20 text-primary rounded-none">
                           {log.college}
                         </Badge>
                       </TableCell>
@@ -214,17 +209,17 @@ export default function VisitorLogs() {
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="font-bold">
-                          {new Date(log.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase()}
+                          {log.timeIn ? new Date(log.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase() : "N/A"}
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-medium">
-                          {new Date(log.timeIn).toLocaleDateString()}
+                        <div className="text-[10px] text-muted-foreground font-medium uppercase">
+                          {log.timeIn ? new Date(log.timeIn).toLocaleDateString() : ""}
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge 
                           className={log.status === 'Active' 
-                            ? 'bg-[#C8E6C9] text-[#2E7D32] hover:bg-[#C8E6C9] px-4' 
-                            : 'bg-gray-200 text-gray-600 hover:bg-gray-200 px-4'
+                            ? 'bg-[#C8E6C9] text-[#2E7D32] hover:bg-[#C8E6C9] px-4 rounded-none font-bold uppercase text-[10px] tracking-widest' 
+                            : 'bg-gray-200 text-gray-600 hover:bg-gray-200 px-4 rounded-none font-bold uppercase text-[10px] tracking-widest'
                           }
                         >
                           {log.status}
@@ -233,23 +228,23 @@ export default function VisitorLogs() {
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="rounded-none">
                               <MoreHorizontal className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="rounded-none border-none shadow-xl">
                             {log.status === 'Active' && (
-                              <DropdownMenuItem onClick={() => handleCheckout(log.id)}>
+                              <DropdownMenuItem onClick={() => handleCheckout(log.id)} className="font-bold text-xs uppercase tracking-widest">
                                 Checkout Student
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem onClick={() => handleBlockUser(log)} className="text-destructive font-semibold">
+                            <DropdownMenuItem onClick={() => handleBlockUser(log)} className="text-destructive font-bold text-xs uppercase tracking-widest">
                               <Ban className="w-4 h-4 mr-2" />
                               Restrict Access
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
-                              className="text-muted-foreground" 
+                              className="text-muted-foreground font-bold text-xs uppercase tracking-widest" 
                               onClick={() => handleDelete(log.id)}
                             >
                               Delete Record
@@ -259,6 +254,13 @@ export default function VisitorLogs() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {filteredLogs.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-12 text-xs text-muted-foreground italic">
+                        No activity records found matching your filters.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             )}
