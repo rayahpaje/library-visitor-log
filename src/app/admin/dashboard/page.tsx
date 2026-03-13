@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -11,7 +11,8 @@ import {
   Search, 
   FileDown,
   Loader2,
-  ShieldAlert
+  ShieldAlert,
+  Database
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,12 +26,15 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, limit } from "firebase/firestore";
+import { collection, query, orderBy, limit, addDoc } from "firebase/firestore";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 
 export default function AdminDashboard() {
   const db = useFirestore();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const visitorsQuery = useMemo(() => {
     if (!db) return null;
@@ -45,20 +49,76 @@ export default function AdminDashboard() {
   const { data: visitors, loading: visitorsLoading } = useCollection(visitorsQuery);
   const { data: blockedUsers } = useCollection(blockListQuery);
 
-  const activeVisitors = visitors?.filter(v => v.status === "Active") || [];
-  
-  const stats = [
-    { title: "Today's Visitors", value: "145", icon: Users },
-    { title: "This Week", value: "650", icon: TrendingUp },
-    { title: "Blocked", value: "20", icon: Ban },
-    { title: "Active Sessions", value: "30", icon: UserCheck },
-  ];
+  const stats = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayVisitors = visitors?.filter(v => v.timeIn?.startsWith(today)).length || 0;
+    const activeSessions = visitors?.filter(v => v.status === "Active").length || 0;
+    const blockedCount = blockedUsers?.length || 0;
+    
+    return [
+      { title: "Today's Visitors", value: todayVisitors.toString(), icon: Users },
+      { title: "Total Records", value: (visitors?.length || 0).toString(), icon: TrendingUp },
+      { title: "Blocked Users", value: blockedCount.toString(), icon: Ban },
+      { title: "Active Sessions", value: activeSessions.toString(), icon: UserCheck },
+    ];
+  }, [visitors, blockedUsers]);
+
+  const filteredVisitors = useMemo(() => {
+    if (!visitors) return [];
+    return visitors.filter(v => 
+      v.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      v.institutionalId?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [visitors, searchTerm]);
+
+  const handleSeedData = async () => {
+    if (!db) return;
+    setIsSeeding(true);
+    try {
+      const sampleVisitors = [
+        { name: "John Doe", institutionalId: "2021-1001", college: "Computing", purpose: "Study", timeIn: new Date().toISOString(), status: "Active" },
+        { name: "Jane Smith", institutionalId: "2022-2045", college: "Arts", purpose: "Research", timeIn: new Date().toISOString(), status: "Active" },
+        { name: "Mark Wilson", institutionalId: "2020-0552", college: "Engineering", purpose: "Meeting", timeIn: new Date().toISOString(), status: "Active" }
+      ];
+      const sampleBlocked = [
+        { name: "Robert Paulson", institutionalId: "2019-0001", reason: "Noise violation", dateBlocked: new Date().toISOString().split('T')[0] }
+      ];
+      
+      for (const v of sampleVisitors) await addDoc(collection(db, "visitors"), v);
+      for (const b of sampleBlocked) await addDoc(collection(db, "blockList"), b);
+      
+      toast({ title: "Sample data generated", description: "The logs have been populated." });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
       <SiteHeader />
       
       <main className="flex-1 p-6 md:p-10 space-y-8">
+        <div className="flex justify-between items-end">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold text-primary">Administration Overview</h2>
+            <p className="text-sm text-muted-foreground">Monitor library facility usage and security logs.</p>
+          </div>
+          {(!visitors || visitors.length === 0) && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSeedData} 
+              disabled={isSeeding}
+              className="gap-2"
+            >
+              {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+              Seed Sample Data
+            </Button>
+          )}
+        </div>
+
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat) => (
@@ -109,7 +169,12 @@ export default function AdminDashboard() {
                 <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Visitor Activity Logs</CardTitle>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <Input placeholder="Search users here..." className="pl-9 h-8 text-xs border-muted-foreground/20 w-[200px]" />
+                  <Input 
+                    placeholder="Search users here..." 
+                    className="pl-9 h-8 text-xs border-muted-foreground/20 w-[200px]" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
               </CardHeader>
               <CardContent className="p-0">
@@ -127,19 +192,28 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {visitors?.map((visitor) => (
+                      {filteredVisitors.map((visitor) => (
                         <TableRow key={visitor.id} className="border-b">
                           <TableCell className="text-xs font-medium text-muted-foreground">
-                            {new Date(visitor.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase()}
+                            {visitor.timeIn ? new Date(visitor.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase() : "N/A"}
                           </TableCell>
                           <TableCell className="text-sm font-semibold">{visitor.name}</TableCell>
                           <TableCell className="text-xs text-muted-foreground">{visitor.college}</TableCell>
                           <TableCell className="text-xs text-muted-foreground">{visitor.purpose}</TableCell>
                           <TableCell>
-                            <Badge className="bg-[#D1E7DD] text-[#0F5132] border-none px-3 py-0.5 text-[10px] font-bold uppercase">ACTIVE</Badge>
+                            <Badge className="bg-[#D1E7DD] text-[#0F5132] border-none px-3 py-0.5 text-[10px] font-bold uppercase">
+                              {visitor.status || "ACTIVE"}
+                            </Badge>
                           </TableCell>
                         </TableRow>
                       ))}
+                      {filteredVisitors.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-10 text-xs text-muted-foreground italic">
+                            No visitor records found.
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 )}
@@ -170,6 +244,13 @@ export default function AdminDashboard() {
                         </TableCell>
                       </TableRow>
                     ))}
+                    {blockedUsers?.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={2} className="text-center py-4 text-xs text-muted-foreground italic">
+                          No blocked users.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
