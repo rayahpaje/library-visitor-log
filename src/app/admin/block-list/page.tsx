@@ -56,10 +56,9 @@ export default function BlockListManagement() {
   const { data: dbBlockedUsers, loading } = useCollection(blockListQuery);
 
   const blockedUsers = useMemo(() => {
-    // Merge real Firestore records with Mocks, prioritizing real records for the same ID
-    const firestoreData = dbBlockedUsers || [];
-    const mockData = MOCK_BLOCKED.filter(m => !firestoreData.find(f => f.institutionalId === m.institutionalId));
-    return [...firestoreData, ...mockData];
+    // Priority to Firestore data. If empty, show mock data for visualization.
+    if (dbBlockedUsers && dbBlockedUsers.length > 0) return dbBlockedUsers;
+    return MOCK_BLOCKED;
   }, [dbBlockedUsers]);
 
   const filteredBlockedUsers = useMemo(() => {
@@ -102,8 +101,8 @@ export default function BlockListManagement() {
   const handleRemoveBlock = (user: any) => {
     if (!db) return;
     
-    // If it has a Firestore ID (usually 20 chars), delete it from DB.
-    if (user.id && user.id.length > 5) {
+    // If it has a Firestore ID, delete it.
+    if (user.id) {
       const docRef = doc(db, "blockList", user.id);
       deleteDoc(docRef)
         .then(() => {
@@ -117,10 +116,10 @@ export default function BlockListManagement() {
           errorEmitter.emit('permission-error', permissionError);
         });
     } else {
-      // For demo/mock students, we simulate the restoration
+      // Mock unrestrict simulation
       toast({ 
         title: "Access Restored", 
-        description: `${user.name}'s access has been restored (Simulation).` 
+        description: `${user.name}'s access has been restored (Demo Record).` 
       });
     }
   };

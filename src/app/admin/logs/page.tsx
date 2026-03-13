@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -48,6 +49,11 @@ export default function VisitorLogs() {
   const db = useFirestore();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCollege, setFilterCollege] = useState("all");
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const logsQuery = useMemo(() => {
     if (!db) return null;
@@ -57,8 +63,9 @@ export default function VisitorLogs() {
   const { data: dbLogs, loading } = useCollection(logsQuery);
 
   const logs = useMemo(() => {
-    if (dbLogs && dbLogs.length > 0) return dbLogs;
-    return MOCK_VISITORS;
+    const firestoreData = dbLogs || [];
+    const mockData = MOCK_VISITORS.filter(m => !firestoreData.find(f => f.institutionalId === m.institutionalId));
+    return [...firestoreData, ...mockData];
   }, [dbLogs]);
 
   const filteredLogs = useMemo(() => {
@@ -98,7 +105,7 @@ export default function VisitorLogs() {
     if (!db || !id) return;
 
     if (id.length < 5) {
-      toast({ title: "Demo Mode", description: "Cannot delete built-in demo records. Please initialize the system." });
+      toast({ title: "Demo Mode", description: "Cannot delete built-in demo records." });
       return;
     }
 
@@ -138,6 +145,24 @@ export default function VisitorLogs() {
         } satisfies SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
       });
+  };
+
+  const formatTime = (isoString: string) => {
+    if (!isClient) return "--:--";
+    try {
+      return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase();
+    } catch {
+      return "N/A";
+    }
+  };
+
+  const formatDate = (isoString: string) => {
+    if (!isClient) return "---";
+    try {
+      return new Date(isoString).toLocaleDateString();
+    } catch {
+      return "";
+    }
   };
 
   return (
@@ -227,10 +252,10 @@ export default function VisitorLogs() {
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="font-bold">
-                          {log.timeIn ? new Date(log.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase() : "N/A"}
+                          {formatTime(log.timeIn)}
                         </div>
                         <div className="text-[10px] text-muted-foreground font-medium uppercase">
-                          {log.timeIn ? new Date(log.timeIn).toLocaleDateString() : ""}
+                          {formatDate(log.timeIn)}
                         </div>
                       </TableCell>
                       <TableCell className="text-center">

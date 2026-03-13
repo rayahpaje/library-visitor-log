@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -11,7 +11,6 @@ import {
   UserCheck, 
   Search, 
   Loader2,
-  AlertCircle,
   MoreVertical,
   Database,
   ArrowRight
@@ -47,6 +46,11 @@ export default function AdminDashboard() {
   const db = useFirestore();
   const [searchTerm, setSearchTerm] = useState("");
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Queries
   const visitorsQuery = useMemo(() => {
@@ -145,6 +149,15 @@ export default function AdminDashboard() {
     }
   };
 
+  const formatTime = (isoString: string) => {
+    if (!isClient) return "--:--";
+    try {
+      return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase();
+    } catch {
+      return "N/A";
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-[#F8F9FA] font-body">
       <AdminSidebar />
@@ -227,7 +240,7 @@ export default function AdminDashboard() {
                     {filteredVisitors.slice(0, 20).map((visitor: any) => (
                       <TableRow key={visitor.id || visitor.name} className="hover:bg-gray-50 text-center group border-b last:border-0">
                         <TableCell className="text-xs font-medium py-4">
-                          {visitor.timeIn ? new Date(visitor.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase() : "N/A"}
+                          {formatTime(visitor.timeIn)}
                         </TableCell>
                         <TableCell className="text-xs font-bold text-primary py-4">{visitor.name}</TableCell>
                         <TableCell className="text-[11px] py-4">{visitor.college}</TableCell>
