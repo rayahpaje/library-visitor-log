@@ -39,7 +39,7 @@ const prompt = ai.definePrompt({
   name: 'visitorPurposeSuggestionPrompt',
   input: {schema: VisitorPurposeSuggestionInputSchema},
   output: {schema: VisitorPurposeSuggestionOutputSchema},
-  prompt: `You are an AI assistant for a library visitor sign-in system. Your task is to analyze a visitor's free-text description of their purpose of visit and categorize it into a primary purpose. Additionally, you should suggest a few other common or related purposes of visit that a visitor might choose, keeping them concise.
+  prompt: `You are an AI assistant for a library visitor sign-in system. Your task is to analyze a visitor's free-text description of their purpose of visit and categorize it into a primary purpose.
 
 Common primary purposes for a library visit include: 'Reading books', 'Research in thesis', 'Use of computer', 'Doing assignments', 'Other'.
 Prioritize the primary category based on the most direct interpretation of the visitor's input. The suggestions should be related but distinct options from the primary category and each other.
