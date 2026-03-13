@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -12,7 +13,6 @@ import {
   FileDown,
   Loader2,
   ShieldAlert,
-  Database,
   MoreVertical,
   UserX
 } from "lucide-react";
@@ -28,23 +28,20 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, limit, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, addDoc } from "firebase/firestore";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 
 export default function AdminDashboard() {
   const db = useFirestore();
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSeeding, setIsSeeding] = useState(false);
 
   const visitorsQuery = useMemo(() => {
     if (!db) return null;
@@ -81,29 +78,6 @@ export default function AdminDashboard() {
     );
   }, [visitors, searchTerm]);
 
-  const handleSeedData = async () => {
-    if (!db) return;
-    setIsSeeding(true);
-    try {
-      for (const v of MOCK_VISITORS) {
-        const { id, ...data } = v;
-        await addDoc(collection(db, "visitors"), {
-          ...data,
-          timeIn: new Date().toISOString()
-        });
-      }
-      for (const b of MOCK_BLOCKED) {
-        const { id, ...data } = b;
-        await addDoc(collection(db, "blockList"), data);
-      }
-      toast({ title: "Sample data generated", description: "The logs have been populated with comprehensive sample records." });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsSeeding(false);
-    }
-  };
-
   const handleBlockUser = async (visitor: any) => {
     if (!db) return;
     try {
@@ -129,16 +103,6 @@ export default function AdminDashboard() {
             <h2 className="text-2xl font-bold text-primary">Administration Overview</h2>
             <p className="text-sm text-muted-foreground">Monitor and manage NEU Library facility usage.</p>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSeedData} 
-            disabled={isSeeding}
-            className="gap-2 border-primary text-primary hover:bg-primary/5"
-          >
-            {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-            {(!visitors || visitors.length === 0) ? "Seed Initial Records" : "Append More Records"}
-          </Button>
         </div>
 
         {/* Stats Row */}
