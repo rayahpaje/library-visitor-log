@@ -1,19 +1,17 @@
-
 "use client";
 
 import { useMemo } from "react";
-import { AdminSidebar } from "@/components/admin-sidebar";
+import { SiteHeader } from "@/components/site-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Users, 
-  UserPlus, 
+  TrendingUp, 
   Ban, 
-  Clock, 
+  UserCheck, 
   Search, 
-  Download, 
-  MoreHorizontal,
-  ArrowUpRight,
-  Loader2
+  FileDown,
+  Loader2,
+  ShieldAlert
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,14 +24,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, limit, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit } from "firebase/firestore";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 export default function AdminDashboard() {
   const db = useFirestore();
@@ -54,139 +48,144 @@ export default function AdminDashboard() {
   const activeVisitors = visitors?.filter(v => v.status === "Active") || [];
   
   const stats = [
-    { title: "Today's Visitors", value: visitors?.length.toString() || "0", icon: Users, color: "text-primary", bg: "bg-primary/10" },
-    { title: "Active Sessions", value: activeVisitors.length.toString(), icon: UserPlus, color: "text-accent", bg: "bg-accent/10" },
-    { title: "Weekly Average", value: "---", icon: Clock, color: "text-blue-600", bg: "bg-blue-50" },
-    { title: "Blocked Individuals", value: blockedUsers?.length.toString() || "0", icon: Ban, color: "text-destructive", bg: "bg-destructive/10" },
+    { title: "Today's Visitors", value: "145", icon: Users },
+    { title: "This Week", value: "650", icon: TrendingUp },
+    { title: "Blocked", value: "20", icon: Ban },
+    { title: "Active Sessions", value: "30", icon: UserCheck },
   ];
 
-  const handleLogout = (visitorId: string) => {
-    if (!db) return;
-    const docRef = doc(db, "visitors", visitorId);
-    updateDoc(docRef, { status: "Logged Out" });
-  };
-
-  const handleDelete = (visitorId: string) => {
-    if (!db) return;
-    const docRef = doc(db, "visitors", visitorId);
-    deleteDoc(docRef);
-  };
-
   return (
-    <div className="flex bg-background min-h-screen">
-      <AdminSidebar />
-      <main className="flex-1 p-8 space-y-8 overflow-y-auto">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-primary">Dashboard Overview</h1>
-            <p className="text-muted-foreground">Real-time visitor analytics and control center.</p>
-          </div>
-          <div className="flex gap-3">
-            <Button variant="outline" className="gap-2">
-              <Download className="w-4 h-4" />
-              Export PDF
-            </Button>
-            <Button className="bg-primary hover:bg-primary/90 text-white gap-2">
-              <ArrowUpRight className="w-4 h-4" />
-              Live Feed
-            </Button>
-          </div>
-        </div>
-
+    <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
+      <SiteHeader />
+      
+      <main className="flex-1 p-6 md:p-10 space-y-8">
+        {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat) => (
-            <Card key={stat.title} className="border-none shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">{stat.title}</p>
-                    <h3 className="text-3xl font-bold">{stat.value}</h3>
-                  </div>
-                  <div className={`${stat.bg} ${stat.color} p-4 rounded-2xl`}>
-                    <stat.icon className="w-6 h-6" />
-                  </div>
+            <Card key={stat.title} className="border-none shadow-sm rounded-none">
+              <CardContent className="p-6 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <stat.icon className="w-3.5 h-3.5" />
+                    {stat.title}
+                  </p>
+                  <h3 className="text-4xl font-bold text-[#333]">{stat.value}</h3>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <Card className="border-none shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-            <div>
-              <CardTitle className="text-xl font-bold">Recent Visitor Activity</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">Real-time logs from Firestore.</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Search name, ID or college..." className="pl-9 w-[300px]" />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {visitorsLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <Table>
-                <TableHeader className="bg-secondary/50">
-                  <TableRow>
-                    <TableHead className="font-bold text-primary">Visitor Name</TableHead>
-                    <TableHead className="font-bold text-primary">Institutional ID</TableHead>
-                    <TableHead className="font-bold text-primary">College / Office</TableHead>
-                    <TableHead className="font-bold text-primary">Purpose</TableHead>
-                    <TableHead className="font-bold text-primary">Time In</TableHead>
-                    <TableHead className="font-bold text-primary">Status</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visitors?.map((visitor) => (
-                    <TableRow key={visitor.id} className="hover:bg-accent/5">
-                      <TableCell className="font-medium">{visitor.name}</TableCell>
-                      <TableCell>{visitor.institutionalId}</TableCell>
-                      <TableCell>{visitor.college}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{visitor.purpose}</TableCell>
-                      <TableCell>{new Date(visitor.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={visitor.status === 'Active' ? 'default' : 'secondary'}
-                          className={visitor.status === 'Active' ? 'bg-accent text-white hover:bg-accent/90' : ''}
-                        >
-                          {visitor.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {visitor.status === 'Active' && (
-                              <DropdownMenuItem onClick={() => handleLogout(visitor.id)}>Checkout Visitor</DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(visitor.id)}>Delete Log</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {visitors?.length === 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Logs Table */}
+          <div className="lg:col-span-2 space-y-8">
+            <Card className="border-none shadow-sm rounded-none">
+              <CardHeader className="pb-4 border-b">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Visitor Statistics & Reporting</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="flex flex-wrap items-center justify-between gap-6">
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Time Period Selector</p>
+                    <RadioGroup defaultValue="day" className="flex items-center gap-4">
+                      {['Day', 'Week', 'Month', 'Custom'].map(period => (
+                        <div key={period} className="flex items-center space-x-2">
+                          <RadioGroupItem value={period.toLowerCase()} id={period} className="border-primary text-primary" />
+                          <Label htmlFor={period} className="text-xs font-medium">{period}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                  <Button variant="default" className="bg-primary hover:bg-primary/90 text-white gap-2 rounded-sm text-xs font-bold uppercase">
+                    <FileDown className="w-4 h-4" />
+                    Generate PDF Report
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-sm rounded-none overflow-hidden">
+              <CardHeader className="pb-4 flex flex-row items-center justify-between bg-white border-b">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Visitor Activity Logs</CardTitle>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input placeholder="Search users here..." className="pl-9 h-8 text-xs border-muted-foreground/20 w-[200px]" />
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {visitorsLoading ? (
+                  <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                ) : (
+                  <Table>
+                    <TableHeader className="bg-[#F8F9FA]">
+                      <TableRow>
+                        <TableHead className="text-[10px] font-bold uppercase py-4">Time In</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase">Name</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase">College/Office</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase">Purpose</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {visitors?.map((visitor) => (
+                        <TableRow key={visitor.id} className="border-b">
+                          <TableCell className="text-xs font-medium text-muted-foreground">
+                            {new Date(visitor.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase()}
+                          </TableCell>
+                          <TableCell className="text-sm font-semibold">{visitor.name}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{visitor.college}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{visitor.purpose}</TableCell>
+                          <TableCell>
+                            <Badge className="bg-[#D1E7DD] text-[#0F5132] border-none px-3 py-0.5 text-[10px] font-bold uppercase">ACTIVE</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Side Panel: Block List */}
+          <div className="space-y-6">
+            <Card className="border-none shadow-sm rounded-none">
+              <CardHeader className="pb-4 border-b">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Block List Management</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader className="bg-[#F8F9FA]">
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                        No visitor logs found yet.
-                      </TableCell>
+                      <TableHead className="text-[10px] font-bold uppercase">Name</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase text-right">Status</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {blockedUsers?.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="text-xs font-medium">{user.name}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="destructive" className="bg-[#F8D7DA] text-[#842029] border-none text-[9px] font-bold py-0">BLOCKED</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            <div className="bg-white p-6 border-l-4 border-destructive shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <ShieldAlert className="w-5 h-5 text-destructive" />
+                <h4 className="text-xs font-bold uppercase tracking-wide text-destructive">Blocked Entry?</h4>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed font-medium">
+                Your ID may be blocked due to pending penalties, unreturned items, or behavior violations. Please proceed to the Main Circulation Desk for assistance.
+              </p>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   );
