@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
@@ -10,8 +11,7 @@ import {
   Monitor,
   Search,
   FileText,
-  AlertCircle,
-  MoreVertical
+  UserCheck
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,10 +33,9 @@ import {
   doc, 
   query, 
   where, 
-  getDocs,
-  serverTimestamp 
+  getDocs
 } from "firebase/firestore";
-import { format, parseISO, isToday, startOfWeek, isAfter } from "date-fns";
+import { format, parseISO, isToday, isAfter, startOfWeek } from "date-fns";
 import { cn } from "@/lib/utils";
 import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
 import { toast } from "@/hooks/use-toast";
@@ -45,6 +44,7 @@ export default function AdminDashboard() {
   const db = useFirestore();
   const [searchTerm, setSearchTerm] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+  const [unblockedIds, setUnblockedIds] = useState<string[]>([]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -66,8 +66,9 @@ export default function AdminDashboard() {
   const blockedList = useMemo(() => {
     const firestoreData = dbBlocked || [];
     const mockData = MOCK_BLOCKED.filter(m => !firestoreData.find(f => f.institutionalId === m.institutionalId));
-    return [...firestoreData, ...mockData];
-  }, [dbBlocked]);
+    // Filter out users that have been unblocked in this session
+    return [...firestoreData, ...mockData].filter(u => !unblockedIds.includes(u.institutionalId));
+  }, [dbBlocked, unblockedIds]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -104,10 +105,10 @@ export default function AdminDashboard() {
   const handleBlock = async (visitor: any) => {
     if (!db) return;
     const isAlreadyBlocked = blockedList.find(b => b.institutionalId === visitor.institutionalId);
-    if (isAlreadyBlocked) {
-      toast({ title: "Already Blocked", description: "This user is already in the block list." });
-      return;
-    }
+    if (isAlreadyBlocked) return;
+
+    // Remove from unblockedIds if they were there
+    setUnblockedIds(prev => prev.filter(id => id !== visitor.institutionalId));
 
     const blockData = {
       name: visitor.name,
@@ -123,6 +124,10 @@ export default function AdminDashboard() {
   // Handle Unblocking
   const handleUnblock = async (blockedUser: any) => {
     if (!db) return;
+    
+    // Optimistically update UI for the demo
+    setUnblockedIds(prev => [...prev, blockedUser.institutionalId]);
+
     const q = query(collection(db, "blockList"), where("institutionalId", "==", blockedUser.institutionalId));
     const querySnapshot = await getDocs(q);
     
@@ -130,10 +135,9 @@ export default function AdminDashboard() {
       querySnapshot.forEach((docSnap) => {
         deleteDoc(doc(db, "blockList", docSnap.id));
       });
-      toast({ title: "Access Restored", description: `${blockedUser.name} is now ACTIVE.` });
-    } else {
-      toast({ variant: "destructive", title: "Action Required", description: "Demo users must be added to DB first." });
     }
+    
+    toast({ title: "Access Restored", description: `${blockedUser.name} is now ACTIVE.` });
   };
 
   const formatTime = (isoString: string) => {
@@ -205,7 +209,7 @@ export default function AdminDashboard() {
             <Card className="border-none shadow-md rounded-xl bg-white">
               <div className="p-6 border-b">
                 <h2 className="text-lg font-bold text-black mb-1">Visitor Statistics & Reporting</h2>
-                <p className="text-xs text-muted-foreground mb-4">Time Period Selector</p>
+                <p className="text-xs text-muted-foreground mb-4">Activity Insights</p>
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                   <RadioGroup defaultValue="day" className="flex items-center gap-4">
                     <div className="flex items-center space-x-2">
@@ -219,10 +223,6 @@ export default function AdminDashboard() {
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="month" id="month" className="w-4 h-4 border-muted-foreground" />
                       <Label htmlFor="month" className="text-sm font-medium">Month</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="custom" id="custom" className="w-4 h-4 border-muted-foreground" />
-                      <Label htmlFor="custom" className="text-sm font-medium">Custom</Label>
                     </div>
                   </RadioGroup>
                   <Button className="bg-[#004D40] hover:bg-[#003d33] text-white rounded-lg h-10 gap-2 px-6 shadow-sm">
@@ -261,7 +261,11 @@ export default function AdminDashboard() {
                       {filteredVisitors.map((visitor) => {
                         const isBlocked = blockedList.some(b => b.institutionalId === visitor.institutionalId);
                         return (
-                          <TableRow key={visitor.id || visitor.institutionalId} className="hover:bg-muted/10 cursor-pointer group" onClick={() => handleBlock(visitor)}>
+                          <TableRow 
+                            key={visitor.id || visitor.institutionalId} 
+                            className="hover:bg-muted/10 cursor-pointer group"
+                            onClick={() => !isBlocked && handleBlock(visitor)}
+                          >
                             <TableCell className="text-xs font-medium py-4">{formatTime(visitor.timeIn)}</TableCell>
                             <TableCell className="text-xs font-bold text-black">{visitor.name}</TableCell>
                             <TableCell className="text-xs font-medium text-muted-foreground">{visitor.college}</TableCell>
@@ -295,20 +299,36 @@ export default function AdminDashboard() {
                   <TableHeader className="bg-[#F4F4F4]">
                     <TableRow>
                       <TableHead className="text-xs font-bold text-black py-3">Name</TableHead>
-                      <TableHead className="text-xs font-bold text-black text-right pr-6">Status</TableHead>
+                      <TableHead className="text-xs font-bold text-black text-right pr-6">Management</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {blockedList.map((user) => (
-                      <TableRow key={user.id || user.institutionalId} className="hover:bg-muted/10 cursor-pointer" onClick={() => handleUnblock(user)}>
-                        <TableCell className="py-3 text-xs font-medium text-black">{user.name}</TableCell>
+                      <TableRow key={user.id || user.institutionalId} className="hover:bg-muted/10">
+                        <TableCell className="py-3 text-xs font-medium text-black">
+                          <div>{user.name}</div>
+                          <div className="text-[10px] text-muted-foreground">{user.institutionalId}</div>
+                        </TableCell>
                         <TableCell className="text-right pr-6">
-                          <div className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-[#FFEBEE] text-[#D32F2F]">
-                            BLOCKED
-                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7 text-[10px] font-bold uppercase border-primary text-primary hover:bg-primary/5 px-3 rounded-md gap-1.5"
+                            onClick={() => handleUnblock(user)}
+                          >
+                            <UserCheck className="w-3 h-3" />
+                            Unblock
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
+                    {blockedList.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={2} className="py-8 text-center text-xs text-muted-foreground italic">
+                          No restricted students
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -321,8 +341,7 @@ export default function AdminDashboard() {
                   <h4 className="text-sm font-bold">Blocked Entry?</h4>
                 </div>
                 <p className="text-xs leading-relaxed text-black font-medium">
-                  Your ID may be blocked due to pending penalties, unreturned items, or behavior violations. 
-                  Please proceed to the Main Circulation Desk for assistance.
+                  ID restrictions are managed here. Removing a student from this list restores their full library access immediately.
                 </p>
               </CardContent>
             </Card>

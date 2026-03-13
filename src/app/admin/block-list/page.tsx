@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -22,13 +23,12 @@ import {
 import { useCollection, useFirestore } from "@/firebase";
 import { collection, doc, deleteDoc, query, where, getDocs } from "firebase/firestore";
 import { toast } from "@/hooks/use-toast";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
 import { MOCK_BLOCKED } from "@/lib/mock-data";
 
 export default function BlockListManagement() {
   const db = useFirestore();
   const [searchTerm, setSearchTerm] = useState("");
+  const [unblockedIds, setUnblockedIds] = useState<string[]>([]);
 
   const blockListQuery = useMemo(() => {
     if (!db) return null;
@@ -40,8 +40,8 @@ export default function BlockListManagement() {
   const blockedUsers = useMemo(() => {
     const firestoreData = dbBlockedUsers || [];
     const mockData = MOCK_BLOCKED.filter(m => !firestoreData.find(f => f.institutionalId === m.institutionalId));
-    return [...firestoreData, ...mockData];
-  }, [dbBlockedUsers]);
+    return [...firestoreData, ...mockData].filter(u => !unblockedIds.includes(u.institutionalId));
+  }, [dbBlockedUsers, unblockedIds]);
 
   const filteredBlockedUsers = useMemo(() => {
     return (blockedUsers as any[]).filter(user => 
@@ -53,21 +53,19 @@ export default function BlockListManagement() {
   const handleUnrestrict = async (user: any) => {
     if (!db) return;
     
-    try {
-      const q = query(collection(db, "blockList"), where("institutionalId", "==", user.institutionalId));
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        querySnapshot.forEach((docSnap) => {
-          deleteDoc(doc(db, "blockList", docSnap.id));
-        });
-        toast({ title: "Access Restored", description: `${user.name} library access is now ACTIVE.` });
-      } else {
-        toast({ variant: "destructive", title: "Action Required", description: "Demo users must be imported to real database first." });
-      }
-    } catch (e) {
-      console.error(e);
+    // Optimistically update UI
+    setUnblockedIds(prev => [...prev, user.institutionalId]);
+    
+    const q = query(collection(db, "blockList"), where("institutionalId", "==", user.institutionalId));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      querySnapshot.forEach((docSnap) => {
+        deleteDoc(doc(db, "blockList", docSnap.id));
+      });
     }
+    
+    toast({ title: "Access Restored", description: `${user.name} library access is now ACTIVE.` });
   };
 
   return (
