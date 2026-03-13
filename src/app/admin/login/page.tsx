@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, ChevronLeft, Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+import { SiteHeader } from "@/components/site-header";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -21,42 +21,53 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-6">
-        <Button 
-          variant="ghost" 
-          className="text-muted-foreground hover:text-primary pl-0"
-          onClick={() => router.push("/")}
-        >
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Back to Visitor Portal
-        </Button>
-
-        <Card className="border-primary/10 shadow-xl rounded-2xl">
-          <CardHeader className="space-y-2 text-center pb-2">
-            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <ShieldCheck className="w-10 h-10 text-white" />
+    <div className="min-h-screen bg-[#F4F7F5] flex flex-col">
+      <SiteHeader />
+      
+      <main className="flex-1 flex flex-col items-center justify-center p-6 pb-20">
+        <div className="w-full max-w-[550px] bg-[#537D6B] rounded-3xl shadow-2xl p-10 md:p-14 text-white text-center">
+          <div className="space-y-6 mb-10">
+            <h2 className="text-3xl font-bold tracking-tight">WELCOME TO NEU LIBRARY!</h2>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-bold tracking-wide">ADMIN ACCESS</h3>
+              <p className="text-white/80 text-sm">Enter your staff credentials to manage Library Log</p>
             </div>
-            <CardTitle className="text-2xl font-bold text-primary">Admin Access</CardTitle>
-            <CardDescription>Enter your credentials to manage library logs.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Administrative ID</Label>
-                <Input id="email" type="text" placeholder="ADM-0000" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" required />
-              </div>
-              <Button type="submit" className="w-full h-12 text-base font-bold" disabled={isLoading}>
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Authorize Access"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+          
+          <form onSubmit={handleLogin} className="space-y-6 text-left max-w-[400px] mx-auto">
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-white font-bold text-sm">Username</Label>
+              <Input 
+                id="username" 
+                type="text" 
+                className="bg-[#CED8D3] border-none h-12 rounded-lg text-primary focus-visible:ring-0 focus-visible:ring-offset-0" 
+                required 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-white font-bold text-sm">Password</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                className="bg-[#CED8D3] border-none h-12 rounded-lg text-primary focus-visible:ring-0 focus-visible:ring-offset-0" 
+                required 
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-[#004D40] hover:bg-[#003d33] text-white font-bold rounded-lg shadow-md transition-all mt-4" 
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Log in to Dashboard"}
+            </Button>
+          </form>
+
+          <p className="mt-10 text-white/70 text-xs font-medium">
+            Protected System. Unauthorized access is monitored.
+          </p>
+        </div>
+      </main>
     </div>
   );
 }
