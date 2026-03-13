@@ -7,13 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Users, 
   Search, 
-  Calendar as CalendarIcon, 
-  Filter,
   Download,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal
+  MoreHorizontal,
+  Filter,
+  Ban
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,14 +32,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, limit, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
 import { MOCK_VISITORS } from "@/lib/mock-data";
 
 export default function VisitorLogs() {
@@ -71,14 +72,59 @@ export default function VisitorLogs() {
 
   const handleCheckout = (id: string) => {
     if (!db) return;
-    updateDoc(doc(db, "visitors", id), { status: "Logged Out" });
-    toast({ title: "Visitor Checked Out", description: "The session has been ended." });
+    const docRef = doc(db, "visitors", id);
+    updateDoc(docRef, { status: "Logged Out" })
+      .then(() => {
+        toast({ title: "Visitor Checked Out", description: "The session has been ended." });
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: "update",
+          requestResourceData: { status: "Logged Out" },
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   const handleDelete = (id: string) => {
     if (!db) return;
-    deleteDoc(doc(db, "visitors", id));
-    toast({ title: "Log Entry Deleted", description: "The record has been removed." });
+    const docRef = doc(db, "visitors", id);
+    deleteDoc(docRef)
+      .then(() => {
+        toast({ title: "Log Entry Deleted", description: "The record has been removed." });
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: "delete",
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
+  };
+
+  const handleBlockUser = (visitor: any) => {
+    if (!db) return;
+    const blockId = visitor.institutionalId.replace(/[^a-zA-Z0-9]/g, '');
+    const blockData = {
+      name: visitor.name,
+      institutionalId: visitor.institutionalId,
+      reason: "Blocked from activity logs for investigation.",
+      dateBlocked: new Date().toISOString().split('T')[0]
+    };
+
+    setDoc(doc(db, "blockList", blockId), blockData)
+      .then(() => {
+        toast({ title: "Visitor Restricted", description: `${visitor.name} has been added to the security database.` });
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: `blockList/${blockId}`,
+          operation: "write",
+          requestResourceData: blockData,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   return (
@@ -197,8 +243,13 @@ export default function VisitorLogs() {
                                 Checkout Student
                               </DropdownMenuItem>
                             )}
+                            <DropdownMenuItem onClick={() => handleBlockUser(log)} className="text-destructive font-semibold">
+                              <Ban className="w-4 h-4 mr-2" />
+                              Restrict Access
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem 
-                              className="text-destructive font-semibold" 
+                              className="text-muted-foreground" 
                               onClick={() => handleDelete(log.id)}
                             >
                               Delete Record

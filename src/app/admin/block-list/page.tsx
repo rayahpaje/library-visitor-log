@@ -8,11 +8,11 @@ import {
   Ban, 
   Search, 
   Plus, 
-  Trash2, 
-  UserX,
+  UserCheck,
   ShieldAlert,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  UserX
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCollection, useFirestore } from "@/firebase";
 import { collection, addDoc, doc, deleteDoc } from "firebase/firestore";
 import { toast } from "@/hooks/use-toast";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
 
 export default function BlockListManagement() {
   const db = useFirestore();
@@ -62,36 +64,51 @@ export default function BlockListManagement() {
     );
   }, [blockedUsers, searchTerm]);
 
-  const handleAddBlock = async () => {
+  const handleAddBlock = () => {
     if (!db || !newBlock.name || !newBlock.institutionalId) {
       toast({ variant: "destructive", title: "Missing info", description: "Name and ID are required." });
       return;
     }
 
     setIsAdding(true);
-    try {
-      await addDoc(collection(db, "blockList"), {
-        ...newBlock,
-        dateBlocked: new Date().toISOString().split('T')[0]
+    const blockData = {
+      ...newBlock,
+      dateBlocked: new Date().toISOString().split('T')[0]
+    };
+
+    addDoc(collection(db, "blockList"), blockData)
+      .then(() => {
+        setNewBlock({ name: "", institutionalId: "", reason: "" });
+        setOpen(false);
+        setIsAdding(false);
+        toast({ title: "Individual Blocked", description: `${newBlock.name} has been restricted.` });
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: "blockList",
+          operation: "create",
+          requestResourceData: blockData,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+        setIsAdding(false);
       });
-      setNewBlock({ name: "", institutionalId: "", reason: "" });
-      setOpen(false);
-      toast({ title: "Individual Blocked", description: `${newBlock.name} has been restricted.` });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsAdding(false);
-    }
   };
 
-  const handleRemoveBlock = async (id: string) => {
+  const handleRemoveBlock = (id: string, name: string) => {
     if (!db) return;
-    try {
-      await deleteDoc(doc(db, "blockList", id));
-      toast({ title: "Restriction Removed", description: "The individual can now access the library." });
-    } catch (error) {
-      console.error(error);
-    }
+    
+    const docRef = doc(db, "blockList", id);
+    deleteDoc(docRef)
+      .then(() => {
+        toast({ title: "Access Restored", description: `${name} can now access the library.` });
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: "delete",
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   return (
@@ -102,7 +119,7 @@ export default function BlockListManagement() {
           <div>
             <h1 className="text-3xl font-bold text-primary flex items-center gap-3">
               <Ban className="w-8 h-8 text-destructive" />
-              Block List Management
+              Security Database
             </h1>
             <p className="text-muted-foreground">Manage restricted individuals and maintain library safety.</p>
           </div>
@@ -111,7 +128,7 @@ export default function BlockListManagement() {
             <DialogTrigger asChild>
               <Button className="bg-destructive hover:bg-destructive/90 text-white gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs shadow-lg">
                 <Plus className="w-4 h-4" />
-                Restrict Access
+                Manually Restrict
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] rounded-none border-none shadow-2xl">
@@ -170,7 +187,7 @@ export default function BlockListManagement() {
           <Card className="lg:col-span-2 border-none shadow-sm rounded-none overflow-hidden">
             <CardHeader className="pb-4 bg-white border-b flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Security Database</CardTitle>
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Blocked Visitors</CardTitle>
                 <CardDescription className="text-xs">Active restrictions currently being enforced.</CardDescription>
               </div>
               <div className="relative">
@@ -194,7 +211,7 @@ export default function BlockListManagement() {
                     <TableRow>
                       <TableHead className="text-[10px] font-bold uppercase py-4">Individual</TableHead>
                       <TableHead className="text-[10px] font-bold uppercase">Date Blocked</TableHead>
-                      <TableHead className="text-[10px] font-bold uppercase">Status</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase">Reason</TableHead>
                       <TableHead className="text-[10px] font-bold uppercase text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -206,20 +223,18 @@ export default function BlockListManagement() {
                           <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{user.institutionalId}</div>
                         </TableCell>
                         <TableCell className="text-xs font-medium">{user.dateBlocked}</TableCell>
-                        <TableCell>
-                          <Badge variant="destructive" className="bg-[#F8D7DA] text-[#842029] border-none text-[10px] font-bold px-3 py-0.5">
-                            RESTRICTED
-                          </Badge>
+                        <TableCell className="text-xs italic text-muted-foreground max-w-[200px] truncate" title={user.reason}>
+                          {user.reason || "No reason specified"}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-muted-foreground hover:text-primary h-8 w-8"
-                            onClick={() => handleRemoveBlock(user.id)}
-                            title="Remove Restriction"
+                            variant="outline" 
+                            size="sm" 
+                            className="text-primary hover:bg-primary/10 gap-2 border-primary h-8 px-4 font-bold text-[10px] uppercase"
+                            onClick={() => handleRemoveBlock(user.id, user.name)}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <UserCheck className="w-3.5 h-3.5" />
+                            Unblock Access
                           </Button>
                         </TableCell>
                       </TableRow>
