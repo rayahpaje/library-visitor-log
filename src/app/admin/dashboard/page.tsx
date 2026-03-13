@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState } from "react";
@@ -40,6 +39,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 export default function AdminDashboard() {
   const db = useFirestore();
@@ -48,7 +48,7 @@ export default function AdminDashboard() {
 
   const visitorsQuery = useMemo(() => {
     if (!db) return null;
-    return query(collection(db, "visitors"), orderBy("timeIn", "desc"), limit(50));
+    return query(collection(db, "visitors"), orderBy("timeIn", "desc"), limit(100));
   }, [db]);
 
   const blockListQuery = useMemo(() => {
@@ -96,7 +96,7 @@ export default function AdminDashboard() {
         const { id, ...data } = b;
         await addDoc(collection(db, "blockList"), data);
       }
-      toast({ title: "Sample data generated", description: "The logs have been populated with sample records." });
+      toast({ title: "Sample data generated", description: "The logs have been populated with comprehensive sample records." });
     } catch (error) {
       console.error(error);
     } finally {
@@ -110,10 +110,10 @@ export default function AdminDashboard() {
       await addDoc(collection(db, "blockList"), {
         name: visitor.name,
         institutionalId: visitor.institutionalId,
-        reason: "Blocked from Dashboard",
+        reason: "Manual Block from Dashboard",
         dateBlocked: new Date().toISOString().split('T')[0]
       });
-      toast({ title: "User Blocked", description: `${visitor.name} has been added to the block list.` });
+      toast({ title: "User Blocked", description: `${visitor.name} has been restricted and added to the block list.` });
     } catch (error) {
       console.error(error);
     }
@@ -127,20 +127,18 @@ export default function AdminDashboard() {
         <div className="flex justify-between items-end">
           <div className="space-y-1">
             <h2 className="text-2xl font-bold text-primary">Administration Overview</h2>
-            <p className="text-sm text-muted-foreground">Monitor library facility usage and security logs.</p>
+            <p className="text-sm text-muted-foreground">Monitor and manage NEU Library facility usage.</p>
           </div>
-          {(!visitors || visitors.length === 0) && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleSeedData} 
-              disabled={isSeeding}
-              className="gap-2 border-primary text-primary hover:bg-primary/5"
-            >
-              {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-              Seed Initial Records
-            </Button>
-          )}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSeedData} 
+            disabled={isSeeding}
+            className="gap-2 border-primary text-primary hover:bg-primary/5"
+          >
+            {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+            {(!visitors || visitors.length === 0) ? "Seed Initial Records" : "Append More Records"}
+          </Button>
         </div>
 
         {/* Stats Row */}
@@ -194,7 +192,7 @@ export default function AdminDashboard() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input 
-                    placeholder="Search users here..." 
+                    placeholder="Search students here..." 
                     className="pl-9 h-8 text-xs border-muted-foreground/20 w-[200px]" 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -212,7 +210,6 @@ export default function AdminDashboard() {
                         <TableHead className="text-[10px] font-bold uppercase">Name</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase">College/Office</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase">Purpose</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase">Status</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -224,17 +221,7 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell className="text-sm font-semibold">{visitor.name}</TableCell>
                           <TableCell className="text-xs text-muted-foreground">{visitor.college}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{visitor.purpose}</TableCell>
-                          <TableCell>
-                            <Badge className={cn(
-                              "border-none px-3 py-0.5 text-[10px] font-bold uppercase",
-                              visitor.status === "Logged Out" 
-                                ? "bg-muted text-muted-foreground" 
-                                : "bg-[#D1E7DD] text-[#0F5132]"
-                            )}>
-                              {visitor.status || "ACTIVE"}
-                            </Badge>
-                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{visitor.purpose}</TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -248,7 +235,7 @@ export default function AdminDashboard() {
                                   onClick={() => handleBlockUser(visitor)}
                                 >
                                   <UserX className="w-4 h-4" />
-                                  Block User
+                                  Block Student
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -257,8 +244,8 @@ export default function AdminDashboard() {
                       ))}
                       {filteredVisitors.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-10 text-xs text-muted-foreground italic">
-                            No visitor records found.
+                          <TableCell colSpan={5} className="text-center py-10 text-xs text-muted-foreground italic">
+                            No student records found.
                           </TableCell>
                         </TableRow>
                       )}
@@ -273,44 +260,54 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             <Card className="border-none shadow-sm rounded-none">
               <CardHeader className="pb-4 border-b">
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Block List Management</CardTitle>
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Security Database</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader className="bg-[#F8F9FA]">
                     <TableRow>
-                      <TableHead className="text-[10px] font-bold uppercase">Name</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase">Blocked Individuals</TableHead>
                       <TableHead className="text-[10px] font-bold uppercase text-right">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {blockedUsers?.map((user) => (
+                    {blockedUsers?.slice(0, 10).map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="text-xs font-medium">{user.name}</TableCell>
+                        <TableCell className="text-xs font-medium">
+                          {user.name}
+                          <div className="text-[9px] text-muted-foreground uppercase">{user.institutionalId}</div>
+                        </TableCell>
                         <TableCell className="text-right">
-                          <Badge variant="destructive" className="bg-[#F8D7DA] text-[#842029] border-none text-[9px] font-bold py-0">BLOCKED</Badge>
+                          <Badge variant="destructive" className="bg-[#F8D7DA] text-[#842029] border-none text-[8px] font-bold py-0 h-4">BLOCKED</Badge>
                         </TableCell>
                       </TableRow>
                     ))}
                     {blockedUsers?.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={2} className="text-center py-4 text-xs text-muted-foreground italic">
-                          No blocked users.
+                          No blocked students.
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+                {blockedUsers && blockedUsers.length > 10 && (
+                  <div className="p-3 text-center bg-[#F8F9FA] border-t">
+                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">
+                      + {blockedUsers.length - 10} more restricted records
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             <div className="bg-white p-6 border-l-4 border-destructive shadow-sm">
               <div className="flex items-center gap-2 mb-3">
                 <ShieldAlert className="w-5 h-5 text-destructive" />
-                <h4 className="text-xs font-bold uppercase tracking-wide text-destructive">Blocked Entry?</h4>
+                <h4 className="text-xs font-bold uppercase tracking-wide text-destructive">Enforcement Protocol</h4>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed font-medium">
-                Your ID may be blocked due to pending penalties, unreturned items, or behavior violations. Please proceed to the Main Circulation Desk for assistance.
+                Automatic ID verification is active. If a restricted ID is tapped, the visitor will be directed to the Circulation Desk for resolution.
               </p>
             </div>
           </div>
@@ -318,8 +315,4 @@ export default function AdminDashboard() {
       </main>
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(" ");
 }
