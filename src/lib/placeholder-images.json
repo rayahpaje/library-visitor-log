@@ -8,9 +8,9 @@
     },
     {
       "id": "neu-logo",
-      "description": "A symbolic professional crest representing knowledge",
-      "imageUrl": "https://picsum.photos/seed/neu-crest/200/200",
-      "imageHint": "university crest"
+      "description": "Official New Era University Logo",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/en/thumb/f/f6/New_Era_University_logo.png/1200px-New_Era_University_logo.png",
+      "imageHint": "university logo"
     }
   ]
 }
