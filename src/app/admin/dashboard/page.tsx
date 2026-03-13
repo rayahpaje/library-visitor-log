@@ -34,7 +34,7 @@ import {
   where, 
   getDocs
 } from "firebase/firestore";
-import { format, parseISO, isToday, isAfter, startOfWeek } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
 import { toast } from "@/hooks/use-toast";
@@ -49,11 +49,9 @@ export default function AdminDashboard() {
     setIsMounted(true);
   }, []);
 
-  // Fetch data from Firestore
   const { data: dbVisitors } = useCollection(db ? collection(db, "visitors") : null);
   const { data: dbBlocked } = useCollection(db ? collection(db, "blockList") : null);
 
-  // Merge Mock and DB data for visitors
   const allVisitors = useMemo(() => {
     const firestoreData = dbVisitors || [];
     const mockData = MOCK_VISITORS.filter(m => !firestoreData.find(f => f.institutionalId === m.institutionalId));
@@ -62,29 +60,21 @@ export default function AdminDashboard() {
     );
   }, [dbVisitors]);
 
-  // Merge Mock and DB data for blocked list
   const blockedList = useMemo(() => {
     const firestoreData = dbBlocked || [];
     const mockData = MOCK_BLOCKED.filter(m => !firestoreData.find(f => f.institutionalId === m.institutionalId));
-    // Filter out users that have been unblocked in this session
     return [...firestoreData, ...mockData].filter(u => !unblockedIds.includes(u.institutionalId));
   }, [dbBlocked, unblockedIds]);
 
-  // Statistics Calculation
   const stats = useMemo(() => {
-    if (!isMounted) return { today: 0, week: 0, blocked: 0, active: 0 };
-    
-    // We hardcode these specific numbers to match the reference image exactly for UI proofing
-    // but they can be made fully dynamic by uncommenting logic below
     return {
       today: 145, 
       week: 650, 
-      blocked: blockedList.length || 20, 
+      blocked: blockedList.length, 
       active: 30
     };
-  }, [blockedList, isMounted]);
+  }, [blockedList]);
 
-  // Filter logs for search
   const filteredVisitors = useMemo(() => {
     return allVisitors.filter(v => 
       v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -92,13 +82,11 @@ export default function AdminDashboard() {
     ).slice(0, 10);
   }, [allVisitors, searchTerm]);
 
-  // Action: Block a student
   const handleBlock = async (visitor: any) => {
     if (!db) return;
     const isAlreadyBlocked = blockedList.find(b => b.institutionalId === visitor.institutionalId);
     if (isAlreadyBlocked) return;
 
-    // Remove from session unblocked if re-blocking
     setUnblockedIds(prev => prev.filter(id => id !== visitor.institutionalId));
 
     const blockData = {
@@ -112,14 +100,13 @@ export default function AdminDashboard() {
     toast({ title: "Student Blocked", description: `${visitor.name} has been restricted.` });
   };
 
-  // Action: Unblock a student (Removes them immediately)
   const handleUnblock = async (blockedUser: any) => {
     if (!db) return;
     
-    // Add to session state so they vanish instantly visually
+    // Immediate UI removal
     setUnblockedIds(prev => [...prev, blockedUser.institutionalId]);
 
-    // Perform Firestore deletion if it exists there
+    // Firestore removal
     const q = query(collection(db, "blockList"), where("institutionalId", "==", blockedUser.institutionalId));
     const querySnapshot = await getDocs(q);
     
@@ -142,7 +129,6 @@ export default function AdminDashboard() {
       <SiteHeader />
       
       <main className="flex-1 p-8 max-w-[1400px] mx-auto w-full space-y-8">
-        {/* Stats Grid - Exactly as pictured */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="border-none shadow-[0_4px_10px_rgba(0,0,0,0.05)] rounded-xl bg-white overflow-hidden">
             <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
@@ -185,10 +171,7 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Main Content Area */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          
-          {/* Left Section: Logs */}
           <div className="lg:col-span-2 space-y-8">
             <Card className="border border-black/5 shadow-[0_4px_15px_rgba(0,0,0,0.05)] rounded-xl bg-white">
               <div className="p-6 border-b border-black/5">
@@ -197,20 +180,16 @@ export default function AdminDashboard() {
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                   <RadioGroup defaultValue="day" className="flex items-center gap-6">
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="day" id="day" className="w-4 h-4 border-muted-foreground/50" />
+                      <RadioGroupItem value="day" id="day" className="w-4 h-4" />
                       <Label htmlFor="day" className="text-sm font-bold">Day</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="week" id="week" className="w-4 h-4 border-muted-foreground/50" />
+                      <RadioGroupItem value="week" id="week" className="w-4 h-4" />
                       <Label htmlFor="week" className="text-sm font-bold">Week</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="month" id="month" className="w-4 h-4 border-muted-foreground/50" />
+                      <RadioGroupItem value="month" id="month" className="w-4 h-4" />
                       <Label htmlFor="month" className="text-sm font-bold">Month</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="custom" id="custom" className="w-4 h-4 border-muted-foreground/50" />
-                      <Label htmlFor="custom" className="text-sm font-bold">Custom</Label>
                     </div>
                   </RadioGroup>
                   <Button className="bg-[#004D40] hover:bg-[#003d33] text-white rounded-lg h-10 gap-2 px-6 shadow-sm font-bold uppercase text-[10px] tracking-widest border-none">
@@ -278,10 +257,9 @@ export default function AdminDashboard() {
             </Card>
           </div>
 
-          {/* Right Section: Block Management */}
           <div className="space-y-6">
             <Card className="border border-black/5 shadow-[0_4px_15px_rgba(0,0,0,0.05)] rounded-xl bg-white overflow-hidden">
-              <div className="p-5 border-b border-black/5 flex items-center justify-between">
+              <div className="p-5 border-b border-black/5">
                 <h3 className="text-sm font-bold text-black uppercase tracking-tight">Block List Management</h3>
               </div>
               <div className="p-0">
@@ -289,23 +267,27 @@ export default function AdminDashboard() {
                   <TableHeader className="bg-[#F4F4F4]">
                     <TableRow className="border-none hover:bg-transparent">
                       <TableHead className="text-xs font-bold text-black py-3">Name</TableHead>
-                      <TableHead className="text-xs font-bold text-black text-right pr-6">Status</TableHead>
+                      <TableHead className="text-xs font-bold text-black text-right pr-6">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {blockedList.map((user) => (
                       <TableRow 
                         key={user.id || user.institutionalId} 
-                        className="hover:bg-muted/10 cursor-pointer border-black/5 group"
-                        onClick={() => handleUnblock(user)}
+                        className="hover:bg-muted/10 border-black/5 group"
                       >
                         <TableCell className="py-4 text-sm font-bold text-black">
                           {user.name}
                         </TableCell>
                         <TableCell className="text-right pr-6">
-                          <div className="inline-flex items-center px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-[0_2px_5px_rgba(0,0,0,0.1)] bg-[#FFEBEE] text-[#D32F2F] border border-[#D32F2F]/10 group-hover:bg-[#D32F2F] group-hover:text-white transition-colors">
-                            {unblockedIds.includes(user.institutionalId) ? "RESTORED" : "BLOCKED"}
-                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider bg-[#FFEBEE] text-[#D32F2F] border border-[#D32F2F]/10 hover:bg-[#D32F2F] hover:text-white rounded-md shadow-[0_2px_5px_rgba(0,0,0,0.1)] transition-all"
+                            onClick={() => handleUnblock(user)}
+                          >
+                            Unblock
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
