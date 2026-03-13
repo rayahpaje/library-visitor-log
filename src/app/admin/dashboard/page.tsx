@@ -129,6 +129,7 @@ export default function AdminDashboard() {
     try {
       const batch = writeBatch(db);
       
+      // Seed Visitors
       MOCK_VISITORS.forEach((v) => {
         const ref = doc(collection(db, "visitors"));
         batch.set(ref, {
@@ -141,8 +142,19 @@ export default function AdminDashboard() {
         });
       });
 
+      // Seed Block List
+      MOCK_BLOCKED.forEach((b) => {
+        const ref = doc(collection(db, "blockList"));
+        batch.set(ref, {
+          name: b.name,
+          institutionalId: b.institutionalId,
+          reason: b.reason,
+          dateBlocked: b.dateBlocked
+        });
+      });
+
       await batch.commit();
-      toast({ title: "System Initialized", description: "All student records imported." });
+      toast({ title: "System Initialized", description: "Student logs and security database populated." });
     } catch (e) {
       console.error(e);
       toast({ variant: "destructive", title: "Error", description: "Failed to initialize records." });

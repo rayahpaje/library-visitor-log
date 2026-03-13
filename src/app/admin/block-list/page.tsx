@@ -103,8 +103,8 @@ export default function BlockListManagement() {
   const handleRemoveBlock = (user: any) => {
     if (!db) return;
     
-    // Check if it's a Firestore record
-    if (user.id && !user.id.startsWith('b')) {
+    // If it has a real Firestore ID (not starting with 'b' which is mock)
+    if (user.id && !user.id.toString().startsWith('b')) {
       const docRef = doc(db, "blockList", user.id);
       deleteDoc(docRef)
         .then(() => {
@@ -118,11 +118,11 @@ export default function BlockListManagement() {
           errorEmitter.emit('permission-error', permissionError);
         });
     } else {
-      // It's a mock record, so just show a message. 
-      // In a real app, mock records wouldn't be unblockable this way unless they were first 'added' to Firestore
+      // It's a mock record, so just show a helpful message. 
+      // To unrestrict these, the user should use the "Import Students" button on the dashboard first.
       toast({ 
         title: "Demo Mode", 
-        description: "This is a hardcoded demonstration record. To fully test unblocking, first block a student from the logs." 
+        description: "To unrestrict built-in students, click 'Import Students' on the Dashboard first." 
       });
     }
   };
@@ -250,7 +250,7 @@ export default function BlockListManagement() {
                             onClick={() => handleRemoveBlock(user)}
                           >
                             <UserCheck className="w-3.5 h-3.5" />
-                            Restore Access
+                            Unrestrict Access
                           </Button>
                         </TableCell>
                       </TableRow>
