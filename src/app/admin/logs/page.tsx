@@ -1,5 +1,4 @@
-
-"use client";
+'use client';
 
 import { useMemo, useState, useEffect } from "react";
 import { AdminSidebar } from "@/components/admin-sidebar";
@@ -10,7 +9,6 @@ import {
   Download,
   Loader2,
   MoreHorizontal,
-  Filter,
   Ban
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -219,7 +217,7 @@ export default function VisitorLogs() {
                                 : "bg-[#C8E6C9] text-[#2E7D32]"
                             )}
                           >
-                            {isBlocked ? "BLOCK" : "ACTIVE"}
+                            {isBlocked ? "BLOCKED" : "ACTIVE"}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">

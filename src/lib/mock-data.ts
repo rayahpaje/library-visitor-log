@@ -17,19 +17,22 @@ export type BlockedUser = {
 };
 
 export const MOCK_VISITORS: Visitor[] = [
-  { id: 'v1', name: 'James Patrick Chen', institutionalId: '2021-1001', college: 'College of Computing', purpose: 'Research in thesis', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v2', name: 'Maria Leonora Santos', institutionalId: '2022-2045', college: 'College of Arts', purpose: 'Doing assignments', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v3', name: 'Antonio Miguel Reyes', institutionalId: '2020-0552', college: 'College of Engineering', purpose: 'Use of computer', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v4', name: 'Sarah Jane Connor', institutionalId: '2023-3001', college: 'College of Science', purpose: 'Reading books', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v5', name: 'Ricardo Dalisay', institutionalId: '2021-9988', college: 'College of Business', purpose: 'Reading books', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v6', name: 'Elena Gilbert', institutionalId: '2022-5566', college: 'College of Nursing', purpose: 'Research in thesis', timeIn: new Date().toISOString(), status: 'Active' },
+  { id: 'v1', name: 'Caspian Anderson', institutionalId: '2021-1001', college: 'College of Engineering', purpose: 'Research in thesis', timeIn: new Date().toISOString(), status: 'Active' },
+  { id: 'v2', name: 'Elaria Smith', institutionalId: '2022-2045', college: 'College of Accountancy', purpose: 'Research in thesis', timeIn: new Date().toISOString(), status: 'Active' },
+  { id: 'v3', name: 'Althea Soleil', institutionalId: '2020-0552', college: 'College of Nursing', purpose: 'Research in thesis', timeIn: new Date().toISOString(), status: 'Active' },
+  { id: 'v4', name: 'Luna Belle Blake', institutionalId: '2023-3001', college: 'College of Criminology', purpose: 'Research in thesis', timeIn: new Date().toISOString(), status: 'Active' },
+  { id: 'v5', name: 'Aiden Blake', institutionalId: '2021-9988', college: 'College of Information Technology', purpose: 'Research in thesis', timeIn: new Date().toISOString(), status: 'Active' },
+  { id: 'v6', name: 'Elena Gilbert', institutionalId: '2022-5566', college: 'College of Nursing', purpose: 'Reading books', timeIn: new Date().toISOString(), status: 'Active' },
   { id: 'v7', name: 'Mateo Gabriel Silva', institutionalId: '2021-4422', college: 'College of Computing', purpose: 'Use of computer', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v8', name: 'Sofia Isabel Luna', institutionalId: '2022-1199', college: 'College of Arts', purpose: 'Reading books', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v9', name: 'Lucas Alexander Tan', institutionalId: '2023-7733', college: 'College of Engineering', purpose: 'Doing assignments', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v10', name: 'Isabella Marie Cruz', institutionalId: '2021-2288', college: 'College of Science', purpose: 'Doing assignments', timeIn: new Date().toISOString(), status: 'Active' },
+  { id: 'v8', name: 'Sofia Isabel Luna', institutionalId: '2022-1199', college: 'College of Arts', purpose: 'Doing assignments', timeIn: new Date().toISOString(), status: 'Active' },
 ];
 
 export const MOCK_BLOCKED: BlockedUser[] = [
-  { id: 'b1', name: 'Robert Paulson', institutionalId: '2019-0001', reason: 'Repeated noise violations in Quiet Zone', dateBlocked: '2024-03-15' },
-  { id: 'b2', name: 'Tyler Durden', institutionalId: '2019-0002', reason: 'Unauthorized access to restricted Archives', dateBlocked: '2024-04-10' },
+  { id: 'b1', name: 'Jane Doe', institutionalId: '2019-0001', reason: 'Repeated noise violations', dateBlocked: '2024-03-15' },
+  { id: 'b2', name: 'Lucian Cole Anderson', institutionalId: '2019-0002', reason: 'Unauthorized access', dateBlocked: '2024-04-10' },
+  { id: 'b3', name: 'Adriel Knox Bennett', institutionalId: '2019-0003', reason: 'Policy violation', dateBlocked: '2024-05-01' },
+  { id: 'b4', name: 'Aurelia Skye Everly', institutionalId: '2019-0004', reason: 'Safety concern', dateBlocked: '2024-05-05' },
+  { id: 'b5', name: 'Mira Sol Hayes', institutionalId: '2019-0005', reason: 'Unreturned library property', dateBlocked: '2024-05-12' },
+  { id: 'b6', name: 'Nyx Aurora Kingsley', institutionalId: '2019-0006', reason: 'Administrative ban', dateBlocked: '2024-05-15' },
+  { id: 'b7', name: 'Seraphina Moon Sinclair', institutionalId: '2019-0007', reason: 'Behavioral issue', dateBlocked: '2024-05-20' },
 ];

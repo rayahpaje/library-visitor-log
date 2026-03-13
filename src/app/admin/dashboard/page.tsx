@@ -1,18 +1,16 @@
-"use client";
+'use client';
 
 import { useMemo, useState, useEffect } from "react";
-import { AdminSidebar } from "@/components/admin-sidebar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SiteHeader } from "@/components/site-header";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
   Users, 
   TrendingUp, 
   Ban, 
   UserCheck, 
   Search, 
-  Loader2,
-  MoreVertical,
-  Database,
-  ArrowRight
+  FileText,
+  AlertCircle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,25 +23,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, limit, addDoc, writeBatch, doc } from "firebase/firestore";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { toast } from "@/hooks/use-toast";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
-import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
+import { collection, query, orderBy, limit } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { isToday, startOfWeek, isAfter, parseISO } from "date-fns";
+import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
 
 export default function AdminDashboard() {
   const db = useFirestore();
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSeeding, setIsSeeding] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -52,7 +42,7 @@ export default function AdminDashboard() {
 
   const visitorsQuery = useMemo(() => {
     if (!db) return null;
-    return query(collection(db, "visitors"), orderBy("timeIn", "desc"), limit(100));
+    return query(collection(db, "visitors"), orderBy("timeIn", "desc"), limit(50));
   }, [db]);
 
   const blockListQuery = useMemo(() => {
@@ -61,7 +51,7 @@ export default function AdminDashboard() {
   }, [db]);
 
   const { data: dbVisitors, loading: visitorsLoading } = useCollection(visitorsQuery);
-  const { data: dbBlockedUsers, loading: blocksLoading } = useCollection(blockListQuery);
+  const { data: dbBlockedUsers } = useCollection(blockListQuery);
 
   const blockedUserIds = useMemo(() => {
     return new Set((dbBlockedUsers || []).map(u => u.institutionalId));
@@ -100,75 +90,15 @@ export default function AdminDashboard() {
     }).length;
 
     const totalBlocked = blockedUsers.length;
-    
-    const activeSessions = visitors.filter(v => 
-      v.status === "Active" && !blockedUserIds.has(v.institutionalId)
-    ).length;
+    const activeSessions = visitors.filter(v => v.status === "Active" && !blockedUserIds.has(v.institutionalId)).length;
 
     return [
-      { title: "Today's Visitors", value: todayCount.toString(), icon: Users, color: "text-primary" },
-      { title: "This Week", value: weekCount.toString(), icon: TrendingUp, color: "text-blue-600" },
-      { title: "Blocked", value: totalBlocked.toString(), icon: Ban, color: "text-destructive" },
-      { title: "Active Sessions", value: activeSessions.toString(), icon: UserCheck, color: "text-[#2E7D32]" },
+      { title: "Today's Visitors", value: todayCount, icon: Users },
+      { title: "This Week", value: weekCount, icon: TrendingUp },
+      { title: "Blocked", value: totalBlocked, icon: Ban },
+      { title: "Active Sessions", value: activeSessions, icon: UserCheck },
     ];
   }, [visitors, blockedUsers, blockedUserIds]);
-
-  const filteredVisitors = useMemo(() => {
-    return (visitors as any[]).filter(v => 
-      v.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      v.institutionalId?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [visitors, searchTerm]);
-
-  const handleBlockUser = (visitor: any) => {
-    if (!db) return;
-    
-    const blockData = {
-      name: visitor.name,
-      institutionalId: visitor.institutionalId,
-      reason: "Administrative Restriction",
-      dateBlocked: new Date().toISOString().split('T')[0]
-    };
-
-    addDoc(collection(db, "blockList"), blockData)
-      .then(() => {
-        toast({ title: "User Restricted", description: `${visitor.name} access has been blocked.` });
-      })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: "blockList",
-          operation: "create",
-          requestResourceData: blockData,
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
-      });
-  };
-
-  const seedDatabase = async () => {
-    if (!db) return;
-    setIsSeeding(true);
-    try {
-      const batch = writeBatch(db);
-      MOCK_VISITORS.forEach((v) => {
-        const ref = doc(collection(db, "visitors"));
-        batch.set(ref, {
-          name: v.name,
-          institutionalId: v.institutionalId,
-          college: v.college,
-          purpose: v.purpose,
-          timeIn: v.timeIn,
-          status: "Active"
-        });
-      });
-      await batch.commit();
-      toast({ title: "Database Initialized", description: "Student records have been imported." });
-    } catch (e) {
-      console.error(e);
-      toast({ variant: "destructive", title: "Error", description: "Failed to initialize records." });
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   const formatTime = (isoString: string) => {
     if (!isClient) return "--:--";
@@ -179,144 +109,140 @@ export default function AdminDashboard() {
     }
   };
 
-  return (
-    <div className="flex min-h-screen bg-[#F8F9FA] font-body">
-      <AdminSidebar />
-      <main className="flex-1 p-8 space-y-8 overflow-y-auto">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-primary tracking-tight">Library Dashboard</h1>
-            <p className="text-muted-foreground text-sm">Real-time overview of visitor activity and security.</p>
-          </div>
-          <Button 
-            onClick={seedDatabase} 
-            disabled={isSeeding}
-            variant="outline"
-            className="border-primary text-primary hover:bg-primary/5 gap-2 h-10 px-6 font-bold uppercase tracking-wider text-xs rounded-none shadow-sm"
-          >
-            {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-            Sync Student Records
-          </Button>
-        </div>
+  const filteredVisitors = useMemo(() => {
+    return visitors.filter(v => 
+      v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      v.institutionalId.toLowerCase().includes(searchTerm.toLowerCase())
+    ).slice(0, 8);
+  }, [visitors, searchTerm]);
 
+  return (
+    <div className="min-h-screen bg-[#F4F7F5] font-body flex flex-col">
+      <SiteHeader />
+      
+      <main className="flex-1 p-6 md:p-10 max-w-[1400px] mx-auto w-full space-y-8">
+        {/* Top Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat) => (
-            <Card key={stat.title} className="border-none shadow-sm rounded-none bg-white overflow-hidden group hover:shadow-md transition-shadow">
-              <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
-                <div className="flex items-center gap-2">
-                  <stat.icon className={cn("w-4 h-4", stat.color)} />
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{stat.title}</p>
+            <Card key={stat.title} className="border-none shadow-md rounded-xl bg-white overflow-hidden">
+              <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+                <div className="flex items-center gap-3 mb-3">
+                  <stat.icon className="w-5 h-5 text-muted-foreground" />
+                  <p className="text-sm font-bold text-black uppercase tracking-tight">{stat.title}</p>
                 </div>
-                <h3 className="text-4xl font-extrabold text-black tracking-tighter">{stat.value}</h3>
+                <h3 className="text-5xl font-extrabold text-black">{stat.value}</h3>
               </CardContent>
             </Card>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="border-none shadow-sm rounded-none overflow-hidden bg-white">
-              <CardHeader className="pb-4 border-b flex flex-row items-center justify-between">
-                <CardTitle className="text-xs font-bold uppercase tracking-widest text-primary">Recent Visitor Activity</CardTitle>
-                <div className="relative w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
-                  <Input 
-                    placeholder="Quick search..." 
-                    className="pl-9 h-9 w-full bg-[#F8F9FA] border-none rounded-none text-xs font-medium" 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+          {/* Main Left Section */}
+          <div className="lg:col-span-2 space-y-8">
+            <Card className="border-none shadow-md rounded-xl bg-white overflow-hidden">
+              <CardHeader className="pb-4 border-b">
+                <CardTitle className="text-lg font-bold">Visitor Statistics & Reporting</CardTitle>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">Time Period Selector</p>
+                    <RadioGroup defaultValue="day" className="flex items-center gap-4">
+                      {["Day", "Week", "Month", "Custom"].map((period) => (
+                        <div key={period} className="flex items-center space-x-2">
+                          <RadioGroupItem value={period.toLowerCase()} id={period.toLowerCase()} />
+                          <Label htmlFor={period.toLowerCase()} className="text-sm font-medium">{period}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                  <Button className="bg-[#004D40] hover:bg-[#003d33] text-white font-bold h-11 px-6 rounded-lg gap-2 shadow-sm">
+                    <FileText className="w-4 h-4" />
+                    Generate PDF Report
+                  </Button>
                 </div>
               </CardHeader>
+              
               <div className="p-0">
+                <div className="px-6 py-4 flex items-center justify-between border-b bg-[#F8F9FA]/50">
+                  <CardTitle className="text-lg font-bold">Visitor Activity Logs</CardTitle>
+                  <div className="relative w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Search users here" 
+                      className="pl-9 h-10 bg-white border-muted-foreground/20 rounded-md text-sm"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
                 <Table>
-                  <TableHeader className="bg-gray-50">
+                  <TableHeader className="bg-[#E9ECEF]">
                     <TableRow>
-                      <TableHead className="font-bold text-black text-[10px] uppercase tracking-widest h-10">Time In</TableHead>
-                      <TableHead className="font-bold text-black text-[10px] uppercase tracking-widest h-10">Student Name</TableHead>
-                      <TableHead className="font-bold text-black text-[10px] uppercase tracking-widest h-10">College</TableHead>
-                      <TableHead className="font-bold text-black text-[10px] uppercase tracking-widest h-10 text-center">Status</TableHead>
-                      <TableHead className="sr-only">Actions</TableHead>
+                      <TableHead className="font-bold text-black text-sm py-4">Time In</TableHead>
+                      <TableHead className="font-bold text-black text-sm">Name</TableHead>
+                      <TableHead className="font-bold text-black text-sm">College/ Office</TableHead>
+                      <TableHead className="font-bold text-black text-sm">Purpose</TableHead>
+                      <TableHead className="font-bold text-black text-sm">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredVisitors.slice(0, 10).map((visitor: any) => {
-                      const isBlocked = blockedUserIds.has(visitor.institutionalId);
-                      return (
-                        <TableRow key={visitor.id || visitor.name} className="hover:bg-gray-50 group border-b last:border-0">
-                          <TableCell className="text-xs font-medium py-4">
-                            {formatTime(visitor.timeIn)}
-                          </TableCell>
-                          <TableCell className="text-xs font-bold text-primary py-4">{visitor.name}</TableCell>
-                          <TableCell className="text-[11px] py-4">{visitor.college}</TableCell>
-                          <TableCell className="py-4 text-center">
-                            <Badge 
-                              className={cn(
-                                "border-none px-3 py-0.5 font-bold uppercase text-[9px] tracking-widest rounded-none",
-                                isBlocked 
-                                  ? "bg-destructive/10 text-destructive"
-                                  : "bg-[#C8E6C9] text-[#2E7D32]"
-                              )}
-                            >
-                              {isBlocked ? "BLOCK" : "ACTIVE"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="py-4 text-right">
-                            {!isBlocked && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none group-hover:bg-muted"><MoreVertical className="h-4 w-4" /></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="rounded-none border-none shadow-xl">
-                                  <DropdownMenuItem onClick={() => handleBlockUser(visitor)} className="text-destructive font-bold uppercase text-[10px] tracking-widest cursor-pointer">
-                                    <Ban className="w-3.5 h-3.5 mr-2" />
-                                    Restrict Access
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {filteredVisitors.map((visitor) => (
+                      <TableRow key={visitor.id} className="border-b last:border-0 hover:bg-muted/30">
+                        <TableCell className="text-sm font-medium py-4">{formatTime(visitor.timeIn)}</TableCell>
+                        <TableCell className="text-sm font-medium">{visitor.name}</TableCell>
+                        <TableCell className="text-sm font-medium">{visitor.college}</TableCell>
+                        <TableCell className="text-sm font-medium">{visitor.purpose}</TableCell>
+                        <TableCell>
+                          <Badge className="bg-[#C8E6C9] text-[#2E7D32] border-none px-4 py-1 rounded-md font-bold text-[10px] uppercase tracking-wider">
+                            ACTIVE
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
             </Card>
           </div>
 
-          <div className="space-y-6">
-            <Card className="border-none shadow-sm rounded-none overflow-hidden bg-white">
+          {/* Right Section */}
+          <div className="space-y-8">
+            <Card className="border-none shadow-md rounded-xl bg-white overflow-hidden">
               <CardHeader className="pb-4 border-b">
-                <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-primary">Security Overview</CardTitle>
+                <CardTitle className="text-lg font-bold">Block List Management</CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
+              <div className="p-0">
                 <Table>
-                  <TableHeader className="bg-gray-50 border-b">
+                  <TableHeader className="bg-[#E9ECEF]">
                     <TableRow>
-                      <TableHead className="font-bold text-black px-6 text-[10px] uppercase tracking-widest h-10">Restricted Name</TableHead>
-                      <TableHead className="font-bold text-black text-right px-6 text-[10px] uppercase tracking-widest h-10">Status</TableHead>
+                      <TableHead className="font-bold text-black text-sm py-3">Name</TableHead>
+                      <TableHead className="font-bold text-black text-sm text-right pr-6">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {blockedUsers?.slice(0, 8).map((user: any) => (
-                      <TableRow key={user.id || user.name} className="hover:bg-destructive/5 border-b last:border-0">
-                        <TableCell className="text-xs font-bold px-6 py-4">{user.name}</TableCell>
-                        <TableCell className="text-right px-6 py-4">
-                          <Badge className="bg-destructive/10 text-destructive border-none text-[9px] font-bold px-2 py-0.5 tracking-widest rounded-none uppercase">BLOCK</Badge>
+                    {blockedUsers.slice(0, 7).map((user) => (
+                      <TableRow key={user.id} className="border-b last:border-0 hover:bg-muted/30">
+                        <TableCell className="text-sm font-medium py-4 pl-6">{user.name}</TableCell>
+                        <TableCell className="text-right pr-6">
+                          <Badge className="bg-[#FFCDD2] text-[#C62828] border-none px-4 py-1 rounded-md font-bold text-[10px] uppercase tracking-wider">
+                            BLOCKED
+                          </Badge>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-                <div className="p-4 border-t bg-gray-50 text-center">
-                  <Button variant="link" asChild className="text-[10px] font-bold uppercase tracking-widest text-primary hover:no-underline">
-                    <a href="/admin/block-list" className="flex items-center justify-center">
-                      Manage Block List <ArrowRight className="w-3 h-3 ml-2" />
-                    </a>
-                  </Button>
-                </div>
-              </CardContent>
+              </div>
+            </Card>
+
+            <Card className="border-none shadow-md rounded-xl bg-white p-6 space-y-4">
+              <div className="flex items-center gap-3 text-destructive">
+                <AlertCircle className="w-6 h-6" />
+                <h4 className="font-bold text-lg">Blocked Entry?</h4>
+              </div>
+              <p className="text-sm text-black leading-relaxed">
+                Your ID may be blocked due to pending penalties, unreturned items, or behavior violations. 
+                Please proceed to the Main Circulation Desk for assistance.
+              </p>
             </Card>
           </div>
         </div>
