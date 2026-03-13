@@ -9,7 +9,6 @@ import {
   Ban, 
   UserCheck, 
   Search, 
-  FileText, 
   Loader2,
   AlertCircle,
   MoreVertical,
@@ -197,10 +196,6 @@ export default function AdminDashboard() {
               <CardHeader className="pb-4 border-b">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Visitor Activity Logs</CardTitle>
-                  <Button className="bg-primary hover:bg-primary/90 text-white gap-2 h-9 px-5 font-bold uppercase tracking-wider text-[10px] rounded-none shadow-sm">
-                    <FileText className="w-3.5 h-3.5" />
-                    Generate PDF Report
-                  </Button>
                 </div>
                 
                 <div className="flex items-center gap-6 mt-6">

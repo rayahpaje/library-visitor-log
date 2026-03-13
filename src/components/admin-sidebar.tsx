@@ -6,7 +6,6 @@ import {
   LayoutDashboard, 
   Users, 
   Ban, 
-  FileText, 
   LogOut, 
   BookOpen,
   Settings
@@ -18,7 +17,6 @@ const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Visitor Logs", href: "/admin/logs", icon: Users },
   { name: "Block List", href: "/admin/block-list", icon: Ban },
-  { name: "Reports", href: "/admin/reports", icon: FileText },
 ];
 
 export function AdminSidebar() {
