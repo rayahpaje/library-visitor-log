@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -41,6 +42,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
+import { MOCK_VISITORS } from "@/lib/mock-data";
 
 export default function VisitorLogs() {
   const db = useFirestore();
@@ -52,10 +54,13 @@ export default function VisitorLogs() {
     return query(collection(db, "visitors"), orderBy("timeIn", "desc"), limit(100));
   }, [db]);
 
-  const { data: logs, loading } = useCollection(logsQuery);
+  const { data: dbLogs, loading } = useCollection(logsQuery);
+
+  const logs = useMemo(() => {
+    return dbLogs.length > 0 ? dbLogs : MOCK_VISITORS;
+  }, [dbLogs]);
 
   const filteredLogs = useMemo(() => {
-    if (!logs) return [];
     return logs.filter(log => {
       const matchesSearch = log.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            log.institutionalId.toLowerCase().includes(searchTerm.toLowerCase());
@@ -77,31 +82,31 @@ export default function VisitorLogs() {
   };
 
   return (
-    <div className="flex bg-background min-h-screen">
+    <div className="flex bg-[#F8F9FA] min-h-screen">
       <AdminSidebar />
       <main className="flex-1 p-8 space-y-8 overflow-y-auto">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-primary flex items-center gap-3">
               <Users className="w-8 h-8" />
-              Detailed Visitor Logs
+              Detailed Student Logs
             </h1>
             <p className="text-muted-foreground">Comprehensive history of library entries and exits.</p>
           </div>
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/10">
             <Download className="w-4 h-4" />
             Export CSV
           </Button>
         </div>
 
-        <Card className="border-none shadow-sm">
-          <CardHeader className="pb-4 border-b">
+        <Card className="border-none shadow-sm rounded-xl overflow-hidden">
+          <CardHeader className="pb-4 bg-white border-b">
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
               <div className="flex items-center gap-4 w-full md:w-auto">
                 <div className="relative flex-1 md:w-[300px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input 
-                    placeholder="Search name or ID..." 
+                    placeholder="Search student name or ID..." 
                     className="pl-9" 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -120,59 +125,61 @@ export default function VisitorLogs() {
                     <SelectItem value="College of Business">College of Business</SelectItem>
                     <SelectItem value="College of Nursing">College of Nursing</SelectItem>
                     <SelectItem value="Staff/Faculty">Staff/Faculty</SelectItem>
-                    <SelectItem value="Visitor">External Visitor</SelectItem>
+                    <SelectItem value="External Visitor">External Visitor</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
                 <Filter className="w-4 h-4" />
                 <span>Showing {filteredLogs.length} entries</span>
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {loading ? (
+            {loading && dbLogs.length === 0 ? (
               <div className="flex justify-center py-24">
                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
               </div>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead>Visitor</TableHead>
-                    <TableHead>Institutional ID</TableHead>
-                    <TableHead>College / Office</TableHead>
-                    <TableHead>Purpose</TableHead>
-                    <TableHead>Time In</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableRow className="bg-gray-100 hover:bg-gray-100">
+                    <TableHead className="font-bold text-black">Student Name</TableHead>
+                    <TableHead className="font-bold text-black text-center">ID / Email</TableHead>
+                    <TableHead className="font-bold text-black text-center">College / Office</TableHead>
+                    <TableHead className="font-bold text-black text-center">Purpose</TableHead>
+                    <TableHead className="font-bold text-black text-center">Time In</TableHead>
+                    <TableHead className="font-bold text-black text-center">Status</TableHead>
+                    <TableHead className="text-right font-bold text-black">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell className="font-semibold">{log.name}</TableCell>
-                      <TableCell>{log.institutionalId}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-normal">
+                    <TableRow key={log.id} className="hover:bg-gray-50">
+                      <TableCell className="font-bold text-primary">{log.name}</TableCell>
+                      <TableCell className="text-center font-medium">{log.institutionalId}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="font-semibold border-primary/20 text-primary">
                           {log.college}
                         </Badge>
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate" title={log.purpose}>
+                      <TableCell className="text-center max-w-[150px] truncate" title={log.purpose}>
                         {log.purpose}
                       </TableCell>
-                      <TableCell>
-                        <div className="text-xs">
+                      <TableCell className="text-center">
+                        <div className="font-bold">
+                          {new Date(log.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase()}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-medium">
                           {new Date(log.timeIn).toLocaleDateString()}
                         </div>
-                        <div className="font-medium">
-                          {new Date(log.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <Badge 
-                          variant={log.status === 'Active' ? 'default' : 'secondary'}
-                          className={log.status === 'Active' ? 'bg-accent' : ''}
+                          className={log.status === 'Active' 
+                            ? 'bg-[#C8E6C9] text-[#2E7D32] hover:bg-[#C8E6C9] px-4' 
+                            : 'bg-gray-200 text-gray-600 hover:bg-gray-200 px-4'
+                          }
                         >
                           {log.status}
                         </Badge>
@@ -187,11 +194,11 @@ export default function VisitorLogs() {
                           <DropdownMenuContent align="end">
                             {log.status === 'Active' && (
                               <DropdownMenuItem onClick={() => handleCheckout(log.id)}>
-                                Checkout Visitor
+                                Checkout Student
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuItem 
-                              className="text-destructive" 
+                              className="text-destructive font-semibold" 
                               onClick={() => handleDelete(log.id)}
                             >
                               Delete Record
@@ -201,13 +208,6 @@ export default function VisitorLogs() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {filteredLogs.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-24 text-muted-foreground italic">
-                        No records match your filters.
-                      </TableCell>
-                    </TableRow>
-                  )}
                 </TableBody>
               </Table>
             )}

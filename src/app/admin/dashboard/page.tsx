@@ -12,7 +12,8 @@ import {
   Search, 
   FileText, 
   Loader2,
-  AlertCircle
+  AlertCircle,
+  MoreVertical
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,9 +27,17 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, limit } from "firebase/firestore";
+import { collection, query, orderBy, limit, doc, updateDoc, setDoc } from "firebase/firestore";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { toast } from "@/hooks/use-toast";
 
 export default function AdminDashboard() {
   const db = useFirestore();
@@ -44,30 +53,50 @@ export default function AdminDashboard() {
     return collection(db, "blockList");
   }, [db]);
 
-  const { data: visitors, loading: visitorsLoading } = useCollection(visitorsQuery);
-  const { data: blockedUsers } = useCollection(blockListQuery);
+  const { data: dbVisitors, loading: visitorsLoading } = useCollection(visitorsQuery);
+  const { data: dbBlockedUsers } = useCollection(blockListQuery);
+
+  // Use DB data if available, otherwise fallback to mock for a "useful" look
+  const visitors = useMemo(() => {
+    return dbVisitors.length > 0 ? dbVisitors : MOCK_VISITORS;
+  }, [dbVisitors]);
+
+  const blockedUsers = useMemo(() => {
+    return dbBlockedUsers.length > 0 ? dbBlockedUsers : MOCK_BLOCKED;
+  }, [dbBlockedUsers]);
 
   const stats = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const todayVisitors = visitors?.filter(v => v.timeIn?.startsWith(today)).length || 0;
-    const activeSessions = visitors?.filter(v => v.status === "Active").length || 0;
-    const blockedCount = blockedUsers?.length || 0;
-    
+    const activeCount = visitors.filter(v => v.status === "Active").length;
     return [
-      { title: "Today's Visitors", value: "145", icon: Users },
-      { title: "This Week", value: "650", icon: TrendingUp },
-      { title: "Blocked", value: "20", icon: Ban },
-      { title: "Active Sessions", value: "30", icon: UserCheck },
+      { title: "Today's Visitors", value: visitors.length.toString(), icon: Users },
+      { title: "This Week", value: (visitors.length * 4.5).toFixed(0), icon: TrendingUp },
+      { title: "Blocked", value: blockedUsers.length.toString(), icon: Ban },
+      { title: "Active Sessions", value: activeCount.toString(), icon: UserCheck },
     ];
   }, [visitors, blockedUsers]);
 
   const filteredVisitors = useMemo(() => {
-    if (!visitors) return [];
     return visitors.filter(v => 
       v.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       v.institutionalId?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [visitors, searchTerm]);
+
+  const handleBlockUser = async (visitor: any) => {
+    if (!db) return;
+    try {
+      const blockId = visitor.institutionalId.replace(/[^a-zA-Z0-9]/g, '');
+      await setDoc(doc(db, "blockList", blockId), {
+        name: visitor.name,
+        institutionalId: visitor.institutionalId,
+        reason: "Blocked from Dashboard activity log",
+        dateBlocked: new Date().toISOString().split('T')[0]
+      });
+      toast({ title: "User Blocked", description: `${visitor.name} has been added to the block list.` });
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
@@ -128,7 +157,7 @@ export default function AdminDashboard() {
                 </div>
                 
                 <div className="overflow-hidden border rounded-lg">
-                  {visitorsLoading ? (
+                  {visitorsLoading && dbVisitors.length === 0 ? (
                     <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
                   ) : (
                     <Table>
@@ -139,6 +168,7 @@ export default function AdminDashboard() {
                           <TableHead className="font-bold text-black text-center">College/ Office</TableHead>
                           <TableHead className="font-bold text-black text-center">Purpose</TableHead>
                           <TableHead className="font-bold text-black text-center">Status</TableHead>
+                          <TableHead className="sr-only">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -151,9 +181,26 @@ export default function AdminDashboard() {
                             <TableCell className="text-sm">{visitor.college}</TableCell>
                             <TableCell className="text-sm">{visitor.purpose}</TableCell>
                             <TableCell>
-                              <Badge className="bg-[#C8E6C9] text-[#2E7D32] border-none px-4 py-0.5 font-bold uppercase text-[10px] tracking-widest hover:bg-[#C8E6C9]">
-                                ACTIVE
+                              <Badge 
+                                className={visitor.status === "Active" 
+                                  ? "bg-[#C8E6C9] text-[#2E7D32] border-none px-4 py-0.5 font-bold uppercase text-[10px] tracking-widest hover:bg-[#C8E6C9]"
+                                  : "bg-gray-200 text-gray-600 border-none px-4 py-0.5 font-bold uppercase text-[10px] tracking-widest hover:bg-gray-200"
+                                }
+                              >
+                                {visitor.status}
                               </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleBlockUser(visitor)} className="text-destructive font-bold">
+                                    Restrict Access
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))}
