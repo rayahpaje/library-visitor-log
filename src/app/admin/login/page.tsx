@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -16,7 +17,7 @@ export default function AdminLogin() {
     e.preventDefault();
     setIsLoading(true);
     // Mock login delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 800));
     router.push("/admin/dashboard");
   };
 
@@ -30,27 +31,27 @@ export default function AdminLogin() {
             <h2 className="text-3xl font-bold tracking-tight uppercase">WELCOME TO NEU LIBRARY!</h2>
             <div className="space-y-2">
               <h3 className="text-2xl font-bold tracking-wide">ADMIN ACCESS</h3>
-              <p className="text-white/80 text-sm">Enter your staff credentials to manage Library Log</p>
+              <p className="text-white/80 text-sm font-medium">Enter your staff credentials to manage Library Log</p>
             </div>
           </div>
           
           <form onSubmit={handleLogin} className="space-y-6 text-left max-w-[400px] mx-auto">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-white font-bold text-sm">Username</Label>
+              <Label htmlFor="username" className="text-white font-bold text-sm tracking-wide">Username</Label>
               <Input 
                 id="username" 
                 type="text" 
-                className="bg-[#CED8D3] border-none h-12 rounded-lg text-primary focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-primary/40" 
+                className="bg-[#CED8D3] border-none h-12 rounded-lg text-primary focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-primary/40 font-medium" 
                 placeholder="Staff ID or Username"
                 required 
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-white font-bold text-sm">Password</Label>
+              <Label htmlFor="password" className="text-white font-bold text-sm tracking-wide">Password</Label>
               <Input 
                 id="password" 
                 type="password" 
-                className="bg-[#CED8D3] border-none h-12 rounded-lg text-primary focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-primary/40" 
+                className="bg-[#CED8D3] border-none h-12 rounded-lg text-primary focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-primary/40 font-medium" 
                 placeholder="••••••••"
                 required 
               />
@@ -65,7 +66,7 @@ export default function AdminLogin() {
             </Button>
           </form>
 
-          <p className="mt-10 text-white/70 text-[10px] font-medium uppercase tracking-widest">
+          <p className="mt-10 text-white/70 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
             Protected System. Unauthorized access is monitored.
           </p>
         </div>

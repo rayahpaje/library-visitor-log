@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -75,31 +76,30 @@ export function VisitorSignInForm() {
     if (!db) return;
     setIsLoading(true);
 
-    try {
-      const visitorData = {
-        name: values.fullName,
-        institutionalId: values.idNumber,
-        college: values.college,
-        purpose: values.purpose,
-        timeIn: new Date().toISOString(),
-        status: "Active"
-      };
+    const visitorData = {
+      name: values.fullName,
+      institutionalId: values.idNumber,
+      college: values.college,
+      purpose: values.purpose,
+      timeIn: new Date().toISOString(),
+      status: "Active"
+    };
 
-      addDoc(collection(db, "visitors"), visitorData).catch(async () => {
+    addDoc(collection(db, "visitors"), visitorData)
+      .then(() => {
+        setSubmitted(true);
+        toast({ title: "Success", description: "Welcome to the NEU Library!" });
+      })
+      .catch(async (error) => {
         errorEmitter.emit("permission-error", new FirestorePermissionError({
           path: "visitors",
           operation: "create",
           requestResourceData: visitorData
         }));
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-
-      setSubmitted(true);
-      toast({ title: "Success", description: "Welcome to the NEU Library!" });
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
   }
 
   if (submitted) {
@@ -193,13 +193,13 @@ export function VisitorSignInForm() {
                   <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/70">College / Office</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="bg-[#E8EEEB] text-primary border-none focus:ring-offset-0 h-10 font-medium rounded-none">
+                      <SelectTrigger className="bg-[#E8EEEB] text-primary border-none focus:ring-offset-0 h-10 font-medium rounded-none text-xs">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="rounded-none">
                       {COLLEGES.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                        <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -216,13 +216,13 @@ export function VisitorSignInForm() {
                   <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/70">Purpose</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="bg-[#E8EEEB] text-primary border-none focus:ring-offset-0 h-10 font-medium rounded-none">
+                      <SelectTrigger className="bg-[#E8EEEB] text-primary border-none focus:ring-offset-0 h-10 font-medium rounded-none text-xs">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="rounded-none">
                       {PURPOSES.map((p) => (
-                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                        <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

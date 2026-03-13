@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -22,7 +23,7 @@ export function SiteHeader() {
               alt="NEU Logo" 
               width={56} 
               height={56}
-              className="object-contain p-0.5"
+              className="object-contain p-1"
               data-ai-hint={logo.imageHint}
             />
           )}

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
@@ -37,6 +38,8 @@ import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
 import { toast } from "@/hooks/use-toast";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 export default function AdminDashboard() {
   const db = useFirestore();
@@ -48,8 +51,11 @@ export default function AdminDashboard() {
     setIsMounted(true);
   }, []);
 
-  const { data: dbVisitors } = useCollection(db ? collection(db, "visitors") : null);
-  const { data: dbBlocked } = useCollection(db ? collection(db, "blockList") : null);
+  const visitorCollection = useMemo(() => db ? collection(db, "visitors") : null, [db]);
+  const blockCollection = useMemo(() => db ? collection(db, "blockList") : null, [db]);
+
+  const { data: dbVisitors } = useCollection(visitorCollection);
+  const { data: dbBlocked } = useCollection(blockCollection);
 
   const allVisitors = useMemo(() => {
     const firestoreData = dbVisitors || [];
@@ -70,9 +76,9 @@ export default function AdminDashboard() {
       today: 145, 
       week: 650, 
       blocked: blockedList.length, 
-      active: 30
+      active: allVisitors.length - blockedList.length
     };
-  }, [blockedList]);
+  }, [blockedList, allVisitors]);
 
   const filteredVisitors = useMemo(() => {
     return allVisitors.filter(v => 
@@ -86,7 +92,6 @@ export default function AdminDashboard() {
     const isAlreadyBlocked = blockedList.find(b => b.institutionalId === visitor.institutionalId);
     if (isAlreadyBlocked) return;
 
-    // Reset session unblock if we're re-blocking
     setUnblockedIds(prev => prev.filter(id => id !== visitor.institutionalId));
 
     const blockData = {
@@ -96,25 +101,36 @@ export default function AdminDashboard() {
       dateBlocked: new Date().toISOString()
     };
 
-    addDoc(collection(db, "blockList"), blockData);
+    addDoc(collection(db, "blockList"), blockData)
+      .catch(async () => {
+        errorEmitter.emit("permission-error", new FirestorePermissionError({
+          path: "blockList",
+          operation: "create",
+          requestResourceData: blockData
+        }));
+      });
+      
     toast({ title: "Student Blocked", description: `${visitor.name} has been restricted.` });
   };
 
   const handleUnblock = async (blockedUser: any) => {
-    // Immediate UI removal for session persistence (especially for mock data)
     setUnblockedIds(prev => [...prev, blockedUser.institutionalId]);
 
     if (!db) return;
 
-    // Firestore removal
     const q = query(collection(db, "blockList"), where("institutionalId", "==", blockedUser.institutionalId));
-    const querySnapshot = await getDocs(q);
-    
-    if (!querySnapshot.empty) {
-      querySnapshot.forEach((docSnap) => {
-        deleteDoc(doc(db, "blockList", docSnap.id));
-      });
-    }
+    getDocs(q).then((querySnapshot) => {
+      if (!querySnapshot.empty) {
+        querySnapshot.forEach((docSnap) => {
+          deleteDoc(doc(db, "blockList", docSnap.id)).catch(async () => {
+            errorEmitter.emit("permission-error", new FirestorePermissionError({
+              path: `blockList/${docSnap.id}`,
+              operation: "delete"
+            }));
+          });
+        });
+      }
+    });
     
     toast({ title: "Access Restored", description: `${blockedUser.name} is now ACTIVE.` });
   };
@@ -129,7 +145,6 @@ export default function AdminDashboard() {
       <SiteHeader />
       
       <main className="flex-1 p-8 max-w-[1400px] mx-auto w-full space-y-8">
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="border-none shadow-[0_4px_10px_rgba(0,0,0,0.05)] rounded-xl bg-white overflow-hidden">
             <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
@@ -172,9 +187,7 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          {/* Left Column: Activity Logs */}
           <div className="lg:col-span-2 space-y-8">
             <Card className="border border-black/5 shadow-[0_4px_15px_rgba(0,0,0,0.05)] rounded-xl bg-white">
               <div className="p-6 border-b border-black/5">
@@ -260,7 +273,6 @@ export default function AdminDashboard() {
             </Card>
           </div>
 
-          {/* Right Column: Block List Management */}
           <div className="space-y-6">
             <Card className="border border-black/5 shadow-[0_4px_15px_rgba(0,0,0,0.05)] rounded-xl bg-white overflow-hidden">
               <div className="p-5 border-b border-black/5">
