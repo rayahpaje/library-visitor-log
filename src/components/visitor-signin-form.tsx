@@ -37,7 +37,14 @@ const formSchema = z.object({
   college: z.string().min(1, { message: "College/Office is required" }),
 });
 
-const PURPOSES = ["Study", "Research", "Borrow/Return Books", "Attend Event", "Meeting", "Other"];
+const PURPOSES = [
+  "Reading books",
+  "Research in thesis",
+  "Use of computer",
+  "Doing assignments",
+  "Other"
+];
+
 const COLLEGES = [
   "College of Computing", 
   "College of Arts", 
