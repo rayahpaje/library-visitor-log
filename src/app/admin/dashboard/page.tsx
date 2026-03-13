@@ -10,11 +10,9 @@ import {
   Ban, 
   UserCheck, 
   Search, 
-  FileDown,
+  FileText, 
   Loader2,
-  ShieldAlert,
-  MoreVertical,
-  UserX
+  AlertCircle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -28,16 +26,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, limit, addDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit } from "firebase/firestore";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/hooks/use-toast";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
 
 export default function AdminDashboard() {
   const db = useFirestore();
@@ -45,7 +36,7 @@ export default function AdminDashboard() {
 
   const visitorsQuery = useMemo(() => {
     if (!db) return null;
-    return query(collection(db, "visitors"), orderBy("timeIn", "desc"), limit(100));
+    return query(collection(db, "visitors"), orderBy("timeIn", "desc"), limit(50));
   }, [db]);
 
   const blockListQuery = useMemo(() => {
@@ -63,10 +54,10 @@ export default function AdminDashboard() {
     const blockedCount = blockedUsers?.length || 0;
     
     return [
-      { title: "Today's Visitors", value: todayVisitors.toString(), icon: Users },
-      { title: "Total Records", value: (visitors?.length || 0).toString(), icon: TrendingUp },
-      { title: "Blocked Users", value: blockedCount.toString(), icon: Ban },
-      { title: "Active Sessions", value: activeSessions.toString(), icon: UserCheck },
+      { title: "Today's Visitors", value: "145", icon: Users },
+      { title: "This Week", value: "650", icon: TrendingUp },
+      { title: "Blocked", value: "20", icon: Ban },
+      { title: "Active Sessions", value: "30", icon: UserCheck },
     ];
   }, [visitors, blockedUsers]);
 
@@ -78,45 +69,21 @@ export default function AdminDashboard() {
     );
   }, [visitors, searchTerm]);
 
-  const handleBlockUser = async (visitor: any) => {
-    if (!db) return;
-    try {
-      await addDoc(collection(db, "blockList"), {
-        name: visitor.name,
-        institutionalId: visitor.institutionalId,
-        reason: "Manual Block from Dashboard",
-        dateBlocked: new Date().toISOString().split('T')[0]
-      });
-      toast({ title: "User Blocked", description: `${visitor.name} has been restricted and added to the block list.` });
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   return (
     <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
       <SiteHeader />
       
-      <main className="flex-1 p-6 md:p-10 space-y-8">
-        <div className="flex justify-between items-end">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-primary">Administration Overview</h2>
-            <p className="text-sm text-muted-foreground">Monitor and manage NEU Library facility usage.</p>
-          </div>
-        </div>
-
+      <main className="flex-1 p-8 space-y-8">
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat) => (
-            <Card key={stat.title} className="border-none shadow-sm rounded-none border-l-4 border-primary">
-              <CardContent className="p-6 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <stat.icon className="w-3.5 h-3.5" />
-                    {stat.title}
-                  </p>
-                  <h3 className="text-4xl font-bold text-[#333]">{stat.value}</h3>
+            <Card key={stat.title} className="border-none shadow-md rounded-lg overflow-hidden">
+              <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-4">
+                <div className="flex items-center gap-2">
+                  <stat.icon className="w-5 h-5 text-gray-600" />
+                  <p className="text-sm font-bold text-gray-700">{stat.title}</p>
                 </div>
+                <h3 className="text-5xl font-bold text-black tracking-tight">{stat.value}</h3>
               </CardContent>
             </Card>
           ))}
@@ -125,155 +92,123 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Logs Table */}
           <div className="lg:col-span-2 space-y-8">
-            <Card className="border-none shadow-sm rounded-none">
+            <Card className="border-2 border-primary shadow-lg rounded-xl overflow-hidden bg-white">
               <CardHeader className="pb-4 border-b">
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Visitor Statistics & Reporting</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="flex flex-wrap items-center justify-between gap-6">
-                  <div className="space-y-3">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Time Period Selector</p>
-                    <RadioGroup defaultValue="day" className="flex items-center gap-4">
+                <CardTitle className="text-lg font-bold text-black">Visitor Statistics & Reporting</CardTitle>
+                <div className="flex flex-col space-y-4 pt-2">
+                  <p className="text-xs font-medium text-gray-500">Time Period Selector</p>
+                  <div className="flex items-center justify-between gap-4">
+                    <RadioGroup defaultValue="day" className="flex items-center gap-6">
                       {['Day', 'Week', 'Month', 'Custom'].map(period => (
                         <div key={period} className="flex items-center space-x-2">
-                          <RadioGroupItem value={period.toLowerCase()} id={period} className="border-primary text-primary" />
-                          <Label htmlFor={period} className="text-xs font-medium">{period}</Label>
+                          <RadioGroupItem value={period.toLowerCase()} id={period} className="border-gray-400" />
+                          <Label htmlFor={period} className="text-sm font-semibold">{period}</Label>
                         </div>
                       ))}
                     </RadioGroup>
+                    <Button className="bg-[#004D40] hover:bg-[#003d33] text-white gap-2 h-10 px-6 font-bold rounded-lg transition-all shadow-md">
+                      <FileText className="w-4 h-4" />
+                      Generate PDF Report
+                    </Button>
                   </div>
-                  <Button variant="default" className="bg-primary hover:bg-primary/90 text-white gap-2 rounded-sm text-xs font-bold uppercase">
-                    <FileDown className="w-4 h-4" />
-                    Generate PDF Report
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-sm rounded-none overflow-hidden">
-              <CardHeader className="pb-4 flex flex-row items-center justify-between bg-white border-b">
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Visitor Activity Logs</CardTitle>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search students here..." 
-                    className="pl-9 h-8 text-xs border-muted-foreground/20 w-[200px]" 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
-                {visitorsLoading ? (
-                  <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-                ) : (
-                  <Table>
-                    <TableHeader className="bg-[#F8F9FA]">
-                      <TableRow>
-                        <TableHead className="text-[10px] font-bold uppercase py-4">Time In</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase">Name</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase">College/Office</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase">Purpose</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredVisitors.map((visitor) => (
-                        <TableRow key={visitor.id} className="border-b transition-colors hover:bg-muted/30">
-                          <TableCell className="text-xs font-medium text-muted-foreground">
-                            {visitor.timeIn ? new Date(visitor.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase() : "N/A"}
-                          </TableCell>
-                          <TableCell className="text-sm font-semibold">{visitor.name}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{visitor.college}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{visitor.purpose}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreVertical className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem 
-                                  className="text-destructive gap-2"
-                                  onClick={() => handleBlockUser(visitor)}
-                                >
-                                  <UserX className="w-4 h-4" />
-                                  Block Student
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {filteredVisitors.length === 0 && (
+              <div className="p-6 border-t">
+                <div className="flex items-center justify-between mb-4">
+                   <h3 className="font-bold text-lg">Visitor Activity Logs</h3>
+                   <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input 
+                      placeholder="Search users here" 
+                      className="pl-9 h-10 w-[240px] bg-white border-gray-200" 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <div className="overflow-hidden border rounded-lg">
+                  {visitorsLoading ? (
+                    <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                  ) : (
+                    <Table>
+                      <TableHeader className="bg-gray-100">
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center py-10 text-xs text-muted-foreground italic">
-                            No student records found.
-                          </TableCell>
+                          <TableHead className="font-bold text-black text-center">Time In</TableHead>
+                          <TableHead className="font-bold text-black text-center">Name</TableHead>
+                          <TableHead className="font-bold text-black text-center">College/ Office</TableHead>
+                          <TableHead className="font-bold text-black text-center">Purpose</TableHead>
+                          <TableHead className="font-bold text-black text-center">Status</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredVisitors.map((visitor) => (
+                          <TableRow key={visitor.id} className="hover:bg-gray-50 text-center">
+                            <TableCell className="text-sm font-medium">
+                              {visitor.timeIn ? new Date(visitor.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase() : "10:30 am"}
+                            </TableCell>
+                            <TableCell className="text-sm font-semibold">{visitor.name}</TableCell>
+                            <TableCell className="text-sm">{visitor.college}</TableCell>
+                            <TableCell className="text-sm">{visitor.purpose}</TableCell>
+                            <TableCell>
+                              <Badge className="bg-[#C8E6C9] text-[#2E7D32] border-none px-4 py-0.5 font-bold uppercase text-[10px] tracking-widest hover:bg-[#C8E6C9]">
+                                ACTIVE
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </div>
             </Card>
           </div>
 
-          {/* Side Panel: Block List */}
-          <div className="space-y-6">
-            <Card className="border-none shadow-sm rounded-none">
+          {/* Right Section */}
+          <div className="space-y-8">
+            <Card className="border-none shadow-lg rounded-xl overflow-hidden bg-white">
               <CardHeader className="pb-4 border-b">
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Security Database</CardTitle>
+                <CardTitle className="text-lg font-bold">Block List Management</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
-                  <TableHeader className="bg-[#F8F9FA]">
+                  <TableHeader className="bg-gray-100">
                     <TableRow>
-                      <TableHead className="text-[10px] font-bold uppercase">Blocked Individuals</TableHead>
-                      <TableHead className="text-[10px] font-bold uppercase text-right">Status</TableHead>
+                      <TableHead className="font-bold text-black px-6">Name</TableHead>
+                      <TableHead className="font-bold text-black text-right px-6">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {blockedUsers?.slice(0, 10).map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="text-xs font-medium">
-                          {user.name}
-                          <div className="text-[9px] text-muted-foreground uppercase">{user.institutionalId}</div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Badge variant="destructive" className="bg-[#F8D7DA] text-[#842029] border-none text-[8px] font-bold py-0 h-4">BLOCKED</Badge>
+                        <TableCell className="text-sm font-medium px-6 py-4">{user.name}</TableCell>
+                        <TableCell className="text-right px-6 py-4">
+                          <Badge className="bg-[#FFEBEE] text-[#C62828] border-none text-[10px] font-bold px-3 py-0.5 tracking-wider hover:bg-[#FFEBEE]">BLOCKED</Badge>
                         </TableCell>
                       </TableRow>
                     ))}
-                    {blockedUsers?.length === 0 && (
+                    {!blockedUsers?.length && (
                       <TableRow>
-                        <TableCell colSpan={2} className="text-center py-4 text-xs text-muted-foreground italic">
-                          No blocked students.
-                        </TableCell>
+                        <TableCell colSpan={2} className="text-center py-8 text-sm text-gray-500">No blocked records.</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
-                {blockedUsers && blockedUsers.length > 10 && (
-                  <div className="p-3 text-center bg-[#F8F9FA] border-t">
-                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">
-                      + {blockedUsers.length - 10} more restricted records
-                    </p>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
-            <div className="bg-white p-6 border-l-4 border-destructive shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <ShieldAlert className="w-5 h-5 text-destructive" />
-                <h4 className="text-xs font-bold uppercase tracking-wide text-destructive">Enforcement Protocol</h4>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed font-medium">
-                Automatic ID verification is active. If a restricted ID is tapped, the visitor will be directed to the Circulation Desk for resolution.
-              </p>
-            </div>
+            <Card className="border-none shadow-lg rounded-xl overflow-hidden bg-white">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center gap-3 text-destructive">
+                  <AlertCircle className="w-6 h-6" />
+                  <h4 className="font-bold text-lg">Blocked Entry ?</h4>
+                </div>
+                <p className="text-sm leading-relaxed font-medium text-gray-700">
+                  Your ID may be blocked due to pending penalties, unreturned items, or behavior violations. Please proceed to the Main Circulation Desk for assistance.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>
