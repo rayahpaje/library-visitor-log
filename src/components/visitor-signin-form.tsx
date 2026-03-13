@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,22 +16,41 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, CheckCircle2 } from "lucide-react";
+import { Loader2, Sparkles, CheckCircle2, Search } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 
 const formSchema = z.object({
   idNumber: z.string().min(5, { message: "Institutional ID or Email is required" }),
   fullName: z.string().min(2, { message: "Full name is required" }),
-  purpose: z.string().min(5, { message: "Please describe your purpose of visit" }),
+  purpose: z.string().min(1, { message: "Please select a purpose of visit" }),
+  customPurpose: z.string().optional(),
 });
+
+const STANDARD_PURPOSES = [
+  "Study",
+  "Research",
+  "Borrow/Return Books",
+  "Attend Event",
+  "Meeting with Staff",
+  "Use Computer/Facilities",
+  "Printing/Scanning",
+  "Other"
+];
 
 export function VisitorSignInForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [showCustom, setShowCustom] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -40,28 +59,38 @@ export function VisitorSignInForm() {
       idNumber: "",
       fullName: "",
       purpose: "",
+      customPurpose: "",
     },
   });
 
-  const purposeValue = form.watch("purpose");
+  const purpose = form.watch("purpose");
 
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (purposeValue && purposeValue.length > 10 && !isAiLoading) {
-        try {
-          setIsAiLoading(true);
-          const result = await suggestVisitorPurpose(purposeValue);
-          setSuggestions(result.suggestions);
-        } catch (error) {
-          console.error("AI Error:", error);
-        } finally {
-          setIsAiLoading(false);
+  async function handleAiAnalysis() {
+    const customText = form.getValues("customPurpose");
+    if (!customText || customText.length < 5) {
+      toast({
+        title: "More info needed",
+        description: "Please type a bit more about your visit for AI suggestions.",
+      });
+      return;
+    }
+
+    try {
+      setIsAiLoading(true);
+      const result = await suggestVisitorPurpose(customText);
+      setAiSuggestions(result.suggestions);
+      if (result.primaryCategory) {
+        // If it matches a standard category, select it
+        if (STANDARD_PURPOSES.includes(result.primaryCategory)) {
+          form.setValue("purpose", result.primaryCategory);
         }
       }
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [purposeValue]);
+    } catch (error) {
+      console.error("AI Error:", error);
+    } finally {
+      setIsAiLoading(false);
+    }
+  }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -86,7 +115,7 @@ export function VisitorSignInForm() {
             <h4 className="text-2xl font-bold text-primary">Check-in Complete!</h4>
             <p className="text-muted-foreground">Thank you for visiting the NEU Library. Enjoy your stay!</p>
           </div>
-          <Button onClick={() => { setSubmitted(false); form.reset(); }} variant="outline" className="mt-4">
+          <Button onClick={() => { setSubmitted(false); form.reset(); setShowCustom(false); }} variant="outline" className="mt-4">
             Sign in another visitor
           </Button>
         </CardContent>
@@ -123,44 +152,89 @@ export function VisitorSignInForm() {
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="purpose"
           render={({ field }) => (
             <FormItem>
-              <div className="flex justify-between items-center">
-                <FormLabel>Purpose of Visit</FormLabel>
-                {isAiLoading && <Loader2 className="w-3 h-3 animate-spin text-accent" />}
-              </div>
-              <FormControl>
-                <Textarea 
-                  placeholder="Tell us what you're working on today..." 
-                  className="resize-none"
-                  {...field} 
-                />
-              </FormControl>
-              <FormDescription className="flex items-center gap-1.5 text-xs">
-                <Sparkles className="w-3 h-3 text-accent" />
-                AI will suggest categories as you type.
-              </FormDescription>
-              {suggestions.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {suggestions.map((suggestion) => (
-                    <Badge 
-                      key={suggestion} 
-                      variant="secondary" 
-                      className="cursor-pointer hover:bg-accent hover:text-white transition-colors py-1 px-3"
-                      onClick={() => form.setValue("purpose", suggestion)}
-                    >
-                      {suggestion}
-                    </Badge>
+              <FormLabel>Purpose of Visit</FormLabel>
+              <Select 
+                onValueChange={(val) => {
+                  field.onChange(val);
+                  setShowCustom(val === "Other");
+                }} 
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Select why you are visiting today" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {STANDARD_PURPOSES.map((p) => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
                   ))}
-                </div>
-              )}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {showCustom && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+            <FormField
+              control={form.control}
+              name="customPurpose"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Describe your purpose</FormLabel>
+                  <div className="flex gap-2">
+                    <FormControl>
+                      <Input 
+                        placeholder="e.g. Using the archives for local history..." 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      className="shrink-0"
+                      onClick={handleAiAnalysis}
+                      disabled={isAiLoading}
+                    >
+                      {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-accent" />}
+                    </Button>
+                  </div>
+                  <FormDescription className="text-[10px]">
+                    Type and click Sparkles for AI suggestions.
+                  </FormDescription>
+                </FormItem>
+              )}
+            />
+            
+            {aiSuggestions.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {aiSuggestions.map((suggestion) => (
+                  <Badge 
+                    key={suggestion} 
+                    variant="secondary" 
+                    className="cursor-pointer hover:bg-accent hover:text-white transition-colors text-[10px] py-0.5"
+                    onClick={() => {
+                      form.setValue("purpose", "Other");
+                      form.setValue("customPurpose", suggestion);
+                    }}
+                  >
+                    {suggestion}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <Button 
           type="submit" 
           className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12 rounded-xl transition-all shadow-lg active:scale-[0.98]" 
