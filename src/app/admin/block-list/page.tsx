@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState } from "react";
@@ -100,11 +99,14 @@ export default function BlockListManagement() {
   };
 
   const handleRemoveBlock = (id: string, name: string) => {
-    if (!db || !id) {
-      toast({ title: "Mock Record", description: "This is a demonstration record and cannot be deleted from the database." });
+    if (!db || !id) return;
+    
+    // Check if it's a mock record (mock records usually don't have Firestore-style IDs)
+    if (id.startsWith('b') && id.length < 5) {
+      toast({ title: "Demo Record", description: "This is a hardcoded demonstration record and cannot be deleted from the database. Please initialize the system to use real records." });
       return;
     }
-    
+
     const docRef = doc(db, "blockList", id);
     deleteDoc(docRef)
       .then(() => {
@@ -134,7 +136,7 @@ export default function BlockListManagement() {
           
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-destructive hover:bg-destructive/90 text-white gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs shadow-lg rounded-none">
+              <Button className="bg-destructive hover:bg-destructive/90 text-white gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs shadow-lg rounded-none border-b-4 border-[#B00000]">
                 <Plus className="w-4 h-4" />
                 Manually Restrict
               </Button>
@@ -247,6 +249,13 @@ export default function BlockListManagement() {
                         </TableCell>
                       </TableRow>
                     ))}
+                    {filteredBlockedUsers.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-12 text-muted-foreground text-sm italic">
+                          No restricted individuals found.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               )}

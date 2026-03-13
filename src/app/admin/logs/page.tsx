@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState } from "react";
@@ -73,6 +72,13 @@ export default function VisitorLogs() {
 
   const handleCheckout = (id: string) => {
     if (!db || !id) return;
+    
+    // Check if it's a demo record
+    if (id.length < 5) {
+      toast({ title: "Demo Mode", description: "Checkout complete (Simulation only)." });
+      return;
+    }
+
     const docRef = doc(db, "visitors", id);
     updateDoc(docRef, { status: "Logged Out" })
       .then(() => {
@@ -90,6 +96,12 @@ export default function VisitorLogs() {
 
   const handleDelete = (id: string) => {
     if (!db || !id) return;
+
+    if (id.length < 5) {
+      toast({ title: "Demo Mode", description: "Cannot delete built-in demo records. Please initialize the system." });
+      return;
+    }
+
     const docRef = doc(db, "visitors", id);
     deleteDoc(docRef)
       .then(() => {
@@ -202,8 +214,8 @@ export default function VisitorLogs() {
                 </TableHeader>
                 <TableBody>
                   {filteredLogs.map((log: any) => (
-                    <TableRow key={log.id || log.name} className="hover:bg-gray-50">
-                      <TableCell className="font-bold text-primary">{log.name}</TableCell>
+                    <TableRow key={log.id || log.name} className="hover:bg-gray-50 border-b">
+                      <TableCell className="font-bold text-primary py-4">{log.name}</TableCell>
                       <TableCell className="text-center font-medium">{log.institutionalId}</TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline" className="font-semibold border-primary/20 text-primary rounded-none">
@@ -240,11 +252,11 @@ export default function VisitorLogs() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="rounded-none border-none shadow-xl">
                             {log.status === 'Active' && log.id && (
-                              <DropdownMenuItem onClick={() => handleCheckout(log.id)} className="font-bold text-xs uppercase tracking-widest">
+                              <DropdownMenuItem onClick={() => handleCheckout(log.id)} className="font-bold text-xs uppercase tracking-widest cursor-pointer">
                                 Checkout Student
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem onClick={() => handleBlockUser(log)} className="text-destructive font-bold text-xs uppercase tracking-widest">
+                            <DropdownMenuItem onClick={() => handleBlockUser(log)} className="text-destructive font-bold text-xs uppercase tracking-widest cursor-pointer">
                               <Ban className="w-4 h-4 mr-2" />
                               Restrict Access
                             </DropdownMenuItem>
@@ -252,7 +264,7 @@ export default function VisitorLogs() {
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
-                                  className="text-muted-foreground font-bold text-xs uppercase tracking-widest" 
+                                  className="text-muted-foreground font-bold text-xs uppercase tracking-widest cursor-pointer" 
                                   onClick={() => handleDelete(log.id)}
                                 >
                                   Delete Record
