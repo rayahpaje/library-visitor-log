@@ -1,16 +1,13 @@
-"use client";
+'use client';
 
 import { useMemo, useState } from "react";
 import { AdminSidebar } from "@/components/admin-sidebar";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Ban, 
   Search, 
-  Plus, 
   UserCheck,
-  ShieldAlert,
-  Loader2,
-  UserX
+  Loader2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,19 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, addDoc, doc, deleteDoc } from "firebase/firestore";
+import { collection, doc, deleteDoc, query, where, getDocs } from "firebase/firestore";
 import { toast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
@@ -42,11 +28,7 @@ import { MOCK_BLOCKED } from "@/lib/mock-data";
 
 export default function BlockListManagement() {
   const db = useFirestore();
-  const [isAdding, setIsAdding] = useState(false);
-  const [newBlock, setNewBlock] = useState({ name: "", institutionalId: "", reason: "" });
-  const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
   const blockListQuery = useMemo(() => {
     if (!db) return null;
@@ -57,12 +39,9 @@ export default function BlockListManagement() {
 
   const blockedUsers = useMemo(() => {
     const firestoreData = dbBlockedUsers || [];
-    const mockData = MOCK_BLOCKED.filter(m => 
-      !firestoreData.find(f => f.institutionalId === m.institutionalId) && 
-      !removedIds.has(m.id)
-    );
+    const mockData = MOCK_BLOCKED.filter(m => !firestoreData.find(f => f.institutionalId === m.institutionalId));
     return [...firestoreData, ...mockData];
-  }, [dbBlockedUsers, removedIds]);
+  }, [dbBlockedUsers]);
 
   const filteredBlockedUsers = useMemo(() => {
     return (blockedUsers as any[]).filter(user => 
@@ -71,57 +50,23 @@ export default function BlockListManagement() {
     );
   }, [blockedUsers, searchTerm]);
 
-  const handleAddBlock = () => {
-    if (!db || !newBlock.name || !newBlock.institutionalId) {
-      toast({ variant: "destructive", title: "Missing info", description: "Name and ID are required." });
-      return;
-    }
-
-    setIsAdding(true);
-    const blockData = {
-      ...newBlock,
-      dateBlocked: new Date().toISOString().split('T')[0]
-    };
-
-    addDoc(collection(db, "blockList"), blockData)
-      .then(() => {
-        setNewBlock({ name: "", institutionalId: "", reason: "" });
-        setOpen(false);
-        setIsAdding(false);
-        toast({ title: "User Restricted", description: `${newBlock.name} access has been blocked.` });
-      })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: "blockList",
-          operation: "create",
-          requestResourceData: blockData,
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
-        setIsAdding(false);
-      });
-  };
-
-  const handleRemoveBlock = (user: any) => {
+  const handleUnrestrict = async (user: any) => {
     if (!db) return;
     
-    const isRealDoc = user.id && !user.id.toString().startsWith('b');
-    
-    if (isRealDoc) {
-      const docRef = doc(db, "blockList", user.id);
-      deleteDoc(docRef)
-        .then(() => {
-          toast({ title: "Access Restored", description: `${user.name} is no longer restricted.` });
-        })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: docRef.path,
-            operation: "delete",
-          } satisfies SecurityRuleContext);
-          errorEmitter.emit('permission-error', permissionError);
+    try {
+      const q = query(collection(db, "blockList"), where("institutionalId", "==", user.institutionalId));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        querySnapshot.forEach((docSnap) => {
+          deleteDoc(doc(db, "blockList", docSnap.id));
         });
-    } else {
-      setRemovedIds(prev => new Set([...prev, user.id]));
-      toast({ title: "Access Restored", description: `${user.name} is no longer restricted.` });
+        toast({ title: "Access Restored", description: `${user.name} library access is now ACTIVE.` });
+      } else {
+        toast({ variant: "destructive", title: "Action Required", description: "Demo users must be imported to real database first." });
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -133,139 +78,74 @@ export default function BlockListManagement() {
           <div>
             <h1 className="text-3xl font-bold text-primary flex items-center gap-3">
               <Ban className="w-8 h-8 text-destructive" />
-              Security Block List
+              Security Database
             </h1>
-            <p className="text-muted-foreground">Manage library access restrictions and safety.</p>
+            <p className="text-muted-foreground uppercase text-[10px] font-bold tracking-widest mt-1">Manage library access restrictions</p>
           </div>
-          
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-destructive hover:bg-destructive/90 text-white gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs shadow-lg rounded-none">
-                <Plus className="w-4 h-4" />
-                Manually Block Access
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-primary font-bold">
-                  <ShieldAlert className="w-5 h-5 text-destructive" />
-                  RESTRICT ACCESS
-                </DialogTitle>
-                <DialogDescription>Enter details to block student access.</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Full Name</Label>
-                  <Input 
-                    placeholder="John Doe" 
-                    value={newBlock.name}
-                    onChange={(e) => setNewBlock({...newBlock, name: e.target.value})}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Student ID</Label>
-                  <Input 
-                    placeholder="2021-XXXX" 
-                    value={newBlock.institutionalId}
-                    onChange={(e) => setNewBlock({...newBlock, institutionalId: e.target.value})}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Reason</Label>
-                  <Textarea 
-                    placeholder="Detail the concern..." 
-                    value={newBlock.reason}
-                    onChange={(e) => setNewBlock({...newBlock, reason: e.target.value})}
-                  />
-                </div>
-              </div>
-              <DialogFooter className="gap-2">
-                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button variant="destructive" onClick={handleAddBlock} disabled={isAdding}>
-                  {isAdding ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Confirm Block"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="lg:col-span-2 border-none shadow-sm rounded-none overflow-hidden bg-white">
-            <CardHeader className="pb-4 bg-white border-b flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Restricted Individuals</CardTitle>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Filter block list..." 
-                  className="pl-9 w-[240px] h-9 text-xs border-muted-foreground/20 rounded-none" 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+        <Card className="border-none shadow-sm rounded-none overflow-hidden bg-white">
+          <CardHeader className="pb-4 bg-white border-b flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Restricted Individuals</CardTitle>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                placeholder="Filter block list..." 
+                className="pl-9 w-[280px] h-10 text-xs border-muted-foreground/20 rounded-none bg-[#F8F9FA]" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loading && (!dbBlockedUsers || dbBlockedUsers.length === 0) ? (
+              <div className="flex justify-center py-24">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              {loading && (!dbBlockedUsers || dbBlockedUsers.length === 0) ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-destructive" />
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader className="bg-[#F8F9FA]">
-                    <TableRow>
-                      <TableHead className="text-[10px] font-bold uppercase py-4">Student Info</TableHead>
-                      <TableHead className="text-[10px] font-bold uppercase">Date Restricted</TableHead>
-                      <TableHead className="text-[10px] font-bold uppercase text-right pr-6">Management</TableHead>
+            ) : (
+              <Table>
+                <TableHeader className="bg-[#F8F9FA]">
+                  <TableRow>
+                    <TableHead className="text-[10px] font-bold uppercase py-4">Student Info</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase">Reason</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase">Date Blocked</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase text-right pr-6">Management</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredBlockedUsers.map((user: any) => (
+                    <TableRow key={user.id || user.institutionalId} className="group hover:bg-muted/30">
+                      <TableCell className="py-4">
+                        <div className="font-bold text-sm text-primary">{user.name}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{user.institutionalId}</div>
+                      </TableCell>
+                      <TableCell className="text-xs font-medium text-muted-foreground italic">"{user.reason}"</TableCell>
+                      <TableCell className="text-xs font-medium">{user.dateBlocked}</TableCell>
+                      <TableCell className="text-right pr-6">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-primary hover:bg-primary/5 gap-2 border-primary h-8 px-4 font-bold text-[10px] uppercase rounded-none"
+                          onClick={() => handleUnrestrict(user)}
+                        >
+                          <UserCheck className="w-3.5 h-3.5" />
+                          Unrestrict Access
+                        </Button>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredBlockedUsers.map((user: any) => (
-                      <TableRow key={user.id || user.name} className="group hover:bg-muted/30">
-                        <TableCell className="py-4">
-                          <div className="font-bold text-sm">{user.name}</div>
-                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{user.institutionalId}</div>
-                        </TableCell>
-                        <TableCell className="text-xs font-medium">{user.dateBlocked}</TableCell>
-                        <TableCell className="text-right pr-6">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-primary hover:bg-primary/5 gap-2 border-primary h-8 px-4 font-bold text-[10px] uppercase rounded-none"
-                            onClick={() => handleRemoveBlock(user)}
-                          >
-                            <UserCheck className="w-3.5 h-3.5" />
-                            Unrestrict Access
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {filteredBlockedUsers.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-12 text-muted-foreground text-sm italic">
-                          No restricted students found matching your search.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="space-y-6">
-            <Card className="border-none bg-primary text-white shadow-lg overflow-hidden relative rounded-none">
-              <UserX className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10" />
-              <CardHeader>
-                <CardTitle className="text-xs font-bold uppercase tracking-widest">Policy Enforcement</CardTitle>
-                <CardDescription className="text-white/70 text-xs">Restricted students are automatically denied entry.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-white/10 border-l-2 border-white/30 text-xs font-medium">
-                  <strong>Validation:</strong> The system verifies every student ID against this database in real-time during sign-in.
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                  ))}
+                  {filteredBlockedUsers.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-12 text-muted-foreground text-sm italic">
+                        No restricted students found matching your search.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

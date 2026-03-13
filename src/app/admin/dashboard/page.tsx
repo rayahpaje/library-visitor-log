@@ -10,7 +10,6 @@ import {
   UserCheck, 
   Search, 
   MoreHorizontal,
-  Loader2,
   ShieldAlert
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -58,7 +57,7 @@ export default function AdminDashboard() {
     return collection(db, "blockList");
   }, [db]);
 
-  const { data: dbVisitors, loading: visitorsLoading } = useCollection(visitorsQuery);
+  const { data: dbVisitors } = useCollection(visitorsQuery);
   const { data: dbBlockedUsers } = useCollection(blockListQuery);
 
   const blockedUserIds = useMemo(() => {
@@ -153,7 +152,7 @@ export default function AdminDashboard() {
         });
         toast({ title: "Access Restored", description: `${name} is now active.` });
       } else {
-        toast({ variant: "destructive", title: "Cannot Unblock", description: "Demo users must be imported to real database first." });
+        toast({ variant: "destructive", title: "Action Required", description: "This is a demo user. Please use the 'Import Records' tool to manage mock data." });
       }
     } catch (e) {
       console.error(e);
@@ -172,7 +171,6 @@ export default function AdminDashboard() {
       <SiteHeader />
       
       <main className="flex-1 p-6 md:p-8 max-w-[1400px] mx-auto w-full space-y-6">
-        {/* Simple Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat) => (
             <Card key={stat.title} className="border-none shadow-sm rounded-none bg-white">
@@ -190,7 +188,6 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Activity Logs - Simple & Clear */}
           <Card className="lg:col-span-2 border-none shadow-sm rounded-none bg-white">
             <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
               <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Visitor Activity Logs</CardTitle>
@@ -228,7 +225,7 @@ export default function AdminDashboard() {
                         <TableCell className="text-xs font-medium">{visitor.purpose}</TableCell>
                         <TableCell>
                           <Badge className={cn(
-                            "rounded-none px-3 py-0.5 font-bold text-[9px] uppercase tracking-widest border-none",
+                            "rounded-none px-3 py-0.5 font-bold text-[9px] uppercase tracking-widest border-none shadow-none",
                             isBlocked ? "bg-destructive text-white" : "bg-[#C8E6C9] text-[#2E7D32]"
                           )}>
                             {isBlocked ? "BLOCK" : "ACTIVE"}
@@ -261,7 +258,6 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          {/* Block List Management Card */}
           <div className="space-y-6">
             <Card className="border-none shadow-sm rounded-none bg-white">
               <CardHeader className="border-b pb-4">
@@ -290,7 +286,7 @@ export default function AdminDashboard() {
                     {blockedUsers.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={2} className="text-center py-8 text-muted-foreground text-xs italic">
-                          No blocked students found.
+                          No restricted students found.
                         </TableCell>
                       </TableRow>
                     )}
@@ -309,7 +305,7 @@ export default function AdminDashboard() {
               <div className="relative z-10 space-y-3">
                 <h4 className="font-bold text-xs uppercase tracking-widest">Security Protocol</h4>
                 <p className="text-sm leading-relaxed text-white/80">
-                  Blocking a student ID denies all entry privileges instantly. Verify credentials before restricting access.
+                  Blocking a student ID denies all library privileges instantly. Verify identity before restriction.
                 </p>
               </div>
             </Card>
