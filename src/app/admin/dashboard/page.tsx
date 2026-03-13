@@ -30,6 +30,7 @@ import { collection, query, orderBy, limit, addDoc } from "firebase/firestore";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
 
 export default function AdminDashboard() {
   const db = useFirestore();
@@ -75,19 +76,18 @@ export default function AdminDashboard() {
     if (!db) return;
     setIsSeeding(true);
     try {
-      const sampleVisitors = [
-        { name: "John Doe", institutionalId: "2021-1001", college: "Computing", purpose: "Study", timeIn: new Date().toISOString(), status: "Active" },
-        { name: "Jane Smith", institutionalId: "2022-2045", college: "Arts", purpose: "Research", timeIn: new Date().toISOString(), status: "Active" },
-        { name: "Mark Wilson", institutionalId: "2020-0552", college: "Engineering", purpose: "Meeting", timeIn: new Date().toISOString(), status: "Active" }
-      ];
-      const sampleBlocked = [
-        { name: "Robert Paulson", institutionalId: "2019-0001", reason: "Noise violation", dateBlocked: new Date().toISOString().split('T')[0] }
-      ];
-      
-      for (const v of sampleVisitors) await addDoc(collection(db, "visitors"), v);
-      for (const b of sampleBlocked) await addDoc(collection(db, "blockList"), b);
-      
-      toast({ title: "Sample data generated", description: "The logs have been populated." });
+      for (const v of MOCK_VISITORS) {
+        const { id, ...data } = v;
+        await addDoc(collection(db, "visitors"), {
+          ...data,
+          timeIn: new Date().toISOString()
+        });
+      }
+      for (const b of MOCK_BLOCKED) {
+        const { id, ...data } = b;
+        await addDoc(collection(db, "blockList"), data);
+      }
+      toast({ title: "Sample data generated", description: "The logs have been populated with real names." });
     } catch (error) {
       console.error(error);
     } finally {
@@ -111,10 +111,10 @@ export default function AdminDashboard() {
               size="sm" 
               onClick={handleSeedData} 
               disabled={isSeeding}
-              className="gap-2"
+              className="gap-2 border-primary text-primary hover:bg-primary/5"
             >
               {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-              Seed Sample Data
+              Seed Initial Records
             </Button>
           )}
         </div>
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat) => (
-            <Card key={stat.title} className="border-none shadow-sm rounded-none">
+            <Card key={stat.title} className="border-none shadow-sm rounded-none border-l-4 border-primary">
               <CardContent className="p-6 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -193,7 +193,7 @@ export default function AdminDashboard() {
                     </TableHeader>
                     <TableBody>
                       {filteredVisitors.map((visitor) => (
-                        <TableRow key={visitor.id} className="border-b">
+                        <TableRow key={visitor.id} className="border-b transition-colors hover:bg-muted/30">
                           <TableCell className="text-xs font-medium text-muted-foreground">
                             {visitor.timeIn ? new Date(visitor.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase() : "N/A"}
                           </TableCell>
@@ -201,7 +201,12 @@ export default function AdminDashboard() {
                           <TableCell className="text-xs text-muted-foreground">{visitor.college}</TableCell>
                           <TableCell className="text-xs text-muted-foreground">{visitor.purpose}</TableCell>
                           <TableCell>
-                            <Badge className="bg-[#D1E7DD] text-[#0F5132] border-none px-3 py-0.5 text-[10px] font-bold uppercase">
+                            <Badge className={cn(
+                              "border-none px-3 py-0.5 text-[10px] font-bold uppercase",
+                              visitor.status === "Logged Out" 
+                                ? "bg-muted text-muted-foreground" 
+                                : "bg-[#D1E7DD] text-[#0F5132]"
+                            )}>
                               {visitor.status || "ACTIVE"}
                             </Badge>
                           </TableCell>
@@ -270,4 +275,8 @@ export default function AdminDashboard() {
       </main>
     </div>
   );
+}
+
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(" ");
 }

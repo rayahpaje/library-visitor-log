@@ -31,14 +31,23 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
-  idNumber: z.string().min(5, { message: "Required" }),
-  fullName: z.string().min(2, { message: "Required" }),
-  purpose: z.string().min(1, { message: "Required" }),
-  college: z.string().min(1, { message: "Required" }),
+  idNumber: z.string().min(5, { message: "ID or Email is required" }),
+  fullName: z.string().min(2, { message: "Name is required" }),
+  purpose: z.string().min(1, { message: "Purpose is required" }),
+  college: z.string().min(1, { message: "College/Office is required" }),
 });
 
 const PURPOSES = ["Study", "Research", "Borrow/Return Books", "Attend Event", "Meeting", "Other"];
-const COLLEGES = ["Computing", "Arts", "Science", "Engineering", "Business", "Nursing", "Staff", "Visitor"];
+const COLLEGES = [
+  "College of Computing", 
+  "College of Arts", 
+  "College of Science", 
+  "College of Engineering", 
+  "College of Business", 
+  "College of Nursing", 
+  "Staff/Faculty", 
+  "External Visitor"
+];
 
 export function VisitorSignInForm() {
   const db = useFirestore();
@@ -53,7 +62,7 @@ export function VisitorSignInForm() {
       idNumber: "",
       fullName: "",
       purpose: "",
-      college: "Computing",
+      college: "College of Computing",
     },
   });
 
@@ -89,7 +98,7 @@ export function VisitorSignInForm() {
       });
 
       setSubmitted(true);
-      toast({ title: "Success", description: "Welcome to the library!" });
+      toast({ title: "Success", description: "Welcome to the NEU Library!" });
     } catch (error) {
       console.error(error);
     } finally {
@@ -104,9 +113,9 @@ export function VisitorSignInForm() {
           <ShieldAlert className="w-12 h-12 text-destructive" />
           <div className="space-y-2">
             <h4 className="text-xl font-bold">Entry Restricted</h4>
-            <p className="text-white/80 text-sm">Please proceed to the Main Circulation Desk for assistance.</p>
+            <p className="text-white/80 text-sm">Your ID is restricted. Please proceed to the Main Circulation Desk for assistance.</p>
           </div>
-          <Button onClick={() => { setIsBlocked(false); form.reset(); }} variant="outline" className="text-primary border-white bg-white hover:bg-white/90">
+          <Button onClick={() => { setIsBlocked(false); form.reset(); }} variant="outline" className="text-primary border-white bg-white hover:bg-white/90 rounded-full px-8">
             Try another ID
           </Button>
         </CardContent>
@@ -121,10 +130,10 @@ export function VisitorSignInForm() {
           <CheckCircle2 className="w-12 h-12 text-accent" />
           <div className="space-y-2">
             <h4 className="text-xl font-bold">Sign-in Complete!</h4>
-            <p className="text-white/80 text-sm">Enjoy your study session.</p>
+            <p className="text-white/80 text-sm">Your entry has been recorded. Enjoy your study session.</p>
           </div>
-          <Button onClick={() => { setSubmitted(false); form.reset(); }} variant="outline" className="text-primary border-white bg-white hover:bg-white/90">
-            Finish
+          <Button onClick={() => { setSubmitted(false); form.reset(); }} variant="outline" className="text-primary border-white bg-white hover:bg-white/90 rounded-full px-8">
+            Done
           </Button>
         </CardContent>
       </Card>
@@ -134,12 +143,12 @@ export function VisitorSignInForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-        <div className="flex rounded-md overflow-hidden border border-white/20 p-0.5 bg-[#4A6D5D]">
+        <div className="flex rounded-lg overflow-hidden border border-white/20 p-1 bg-[#4A6D5D]">
           <button
             type="button"
             className={cn(
-              "flex-1 py-1.5 text-xs font-bold transition-all",
-              loginMethod === "tap" ? "bg-[#3D5C4E] text-white" : "text-white/60 hover:text-white"
+              "flex-1 py-2 text-xs font-bold transition-all rounded-md uppercase tracking-wider",
+              loginMethod === "tap" ? "bg-[#3D5C4E] text-white shadow-sm" : "text-white/60 hover:text-white"
             )}
             onClick={() => setLoginMethod("tap")}
           >
@@ -148,8 +157,8 @@ export function VisitorSignInForm() {
           <button
             type="button"
             className={cn(
-              "flex-1 py-1.5 text-xs font-bold transition-all",
-              loginMethod === "email" ? "bg-[#3D5C4E] text-white" : "text-white/60 hover:text-white"
+              "flex-1 py-2 text-xs font-bold transition-all rounded-md uppercase tracking-wider",
+              loginMethod === "email" ? "bg-[#3D5C4E] text-white shadow-sm" : "text-white/60 hover:text-white"
             )}
             onClick={() => setLoginMethod("email")}
           >
@@ -157,65 +166,100 @@ export function VisitorSignInForm() {
           </button>
         </div>
 
-        <FormField
-          control={form.control}
-          name="idNumber"
-          render={({ field }) => (
-            <FormItem className="space-y-1">
-              <FormLabel className="text-[10px] font-bold uppercase tracking-wider text-white/70">
-                {loginMethod === "tap" ? "NEU School ID" : "Institutional Email"}
-              </FormLabel>
-              <FormControl>
-                <Input className="bg-[#E8EEEB] text-primary border-none focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-white h-9" {...field} />
-              </FormControl>
-              <FormMessage className="text-[10px]" />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="fullName"
-          render={({ field }) => (
-            <FormItem className="space-y-1">
-              <FormLabel className="text-[10px] font-bold uppercase tracking-wider text-white/70">Full Name</FormLabel>
-              <FormControl>
-                <Input className="bg-[#E8EEEB] text-primary border-none focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-white h-9" {...field} />
-              </FormControl>
-              <FormMessage className="text-[10px]" />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="purpose"
-          render={({ field }) => (
-            <FormItem className="space-y-1">
-              <FormLabel className="text-[10px] font-bold uppercase tracking-wider text-white/70">Purpose of Visit</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+        <div className="grid grid-cols-1 gap-4">
+          <FormField
+            control={form.control}
+            name="idNumber"
+            render={({ field }) => (
+              <FormItem className="space-y-1">
+                <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/70">
+                  {loginMethod === "tap" ? "NEU School ID" : "Institutional Email"}
+                </FormLabel>
                 <FormControl>
-                  <SelectTrigger className="bg-[#E8EEEB] text-primary border-none focus:ring-offset-0 focus:ring-1 focus:ring-white h-9">
-                    <SelectValue placeholder="Select purpose" />
-                  </SelectTrigger>
+                  <Input 
+                    placeholder={loginMethod === "tap" ? "2021-1234" : "user@neu.edu.ph"}
+                    className="bg-[#E8EEEB] text-primary border-none focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-white h-10 font-medium" 
+                    {...field} 
+                  />
                 </FormControl>
-                <SelectContent>
-                  {PURPOSES.map((p) => (
-                    <SelectItem key={p} value={p}>{p}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage className="text-[10px]" />
-            </FormItem>
-          )}
-        />
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="fullName"
+            render={({ field }) => (
+              <FormItem className="space-y-1">
+                <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/70">Full Name</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Enter your full name"
+                    className="bg-[#E8EEEB] text-primary border-none focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-white h-10 font-medium" 
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="college"
+              render={({ field }) => (
+                <FormItem className="space-y-1">
+                  <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/70">College / Office</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="bg-[#E8EEEB] text-primary border-none focus:ring-offset-0 focus:ring-2 focus:ring-white h-10 font-medium">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {COLLEGES.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-[10px]" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="purpose"
+              render={({ field }) => (
+                <FormItem className="space-y-1">
+                  <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/70">Purpose</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="bg-[#E8EEEB] text-primary border-none focus:ring-offset-0 focus:ring-2 focus:ring-white h-10 font-medium">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {PURPOSES.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-[10px]" />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
         <Button 
           type="submit" 
-          className="w-full bg-[#3D5C4E] hover:bg-[#324B40] text-white font-bold h-10 rounded uppercase tracking-widest text-xs mt-4" 
+          className="w-full bg-[#3D5C4E] hover:bg-[#324B40] text-white font-bold h-12 rounded-lg uppercase tracking-widest text-xs mt-4 shadow-lg transition-transform active:scale-[0.98]" 
           disabled={isLoading}
         >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "SIGN IN"}
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "SIGN IN ENTRY"}
         </Button>
       </form>
     </Form>
