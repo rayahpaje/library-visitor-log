@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -57,10 +58,9 @@ export default function BlockListManagement() {
   const { data: dbBlockedUsers, loading } = useCollection(blockListQuery);
 
   const blockedUsers = useMemo(() => {
-    const firestoreData = dbBlockedUsers || [];
-    // Only show mock users if they aren't overridden by a real Firestore block
-    const uniqueMocks = MOCK_BLOCKED.filter(m => !firestoreData.some(f => f.institutionalId === m.institutionalId));
-    return [...firestoreData, ...uniqueMocks];
+    // If Firestore has records, only show those. If empty, show mocks.
+    if (dbBlockedUsers && dbBlockedUsers.length > 0) return dbBlockedUsers;
+    return MOCK_BLOCKED;
   }, [dbBlockedUsers]);
 
   const filteredBlockedUsers = useMemo(() => {
@@ -103,12 +103,14 @@ export default function BlockListManagement() {
   const handleRemoveBlock = (user: any) => {
     if (!db) return;
     
-    // If it has a real Firestore ID (not starting with 'b' which is mock)
-    if (user.id && !user.id.toString().startsWith('b')) {
+    // Check if it's a real Firestore doc (long ID) vs Mock (ID starts with 'b')
+    const isMock = user.id?.toString().startsWith('b') && user.id?.length < 5;
+
+    if (user.id && !isMock) {
       const docRef = doc(db, "blockList", user.id);
       deleteDoc(docRef)
         .then(() => {
-          toast({ title: "Access Restored", description: `${user.name} can now access the library.` });
+          toast({ title: "Access Restored", description: `${user.name}'s library privileges have been restored.` });
         })
         .catch(async (serverError) => {
           const permissionError = new FirestorePermissionError({
@@ -118,11 +120,9 @@ export default function BlockListManagement() {
           errorEmitter.emit('permission-error', permissionError);
         });
     } else {
-      // It's a mock record, so just show a helpful message. 
-      // To unrestrict these, the user should use the "Import Students" button on the dashboard first.
       toast({ 
-        title: "Demo Mode", 
-        description: "To unrestrict built-in students, click 'Import Students' on the Dashboard first." 
+        title: "Import Required", 
+        description: "To unrestrict this demo student, please click 'Import Student Records' on the Dashboard first." 
       });
     }
   };
@@ -217,7 +217,7 @@ export default function BlockListManagement() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              {loading && dbBlockedUsers?.length === 0 ? (
+              {loading && (!dbBlockedUsers || dbBlockedUsers.length === 0) ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-destructive" />
                 </div>
@@ -282,27 +282,8 @@ export default function BlockListManagement() {
                   <strong>Security:</strong> All visitor IDs are automatically checked against this database during sign-in.
                 </div>
                 <div className="p-4 bg-white/10 border-l-2 border-white/30 text-xs leading-relaxed font-medium">
-                  <strong>Logging:</strong> All blocked entry attempts are recorded for administrative review and security monitoring.
+                  <strong>Logging:</strong> All blocked entry attempts are recorded for monitoring.
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-sm rounded-none bg-white">
-              <CardHeader className="pb-4 border-b">
-                <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-primary">Recent Incident Log</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 space-y-4">
-                {filteredBlockedUsers?.slice(0, 5).map((user: any) => (
-                  <div key={user.id || user.name} className="flex gap-3 items-start border-b border-secondary pb-4 last:border-0 last:pb-0">
-                    <div className="p-2 bg-destructive/10 rounded-sm">
-                      <AlertTriangle className="w-3 h-3 text-destructive" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-primary">{user.name}</p>
-                      <p className="text-[10px] text-muted-foreground italic leading-tight mt-1">"{user.reason || 'No reason specified'}"</p>
-                    </div>
-                  </div>
-                ))}
               </CardContent>
             </Card>
           </div>

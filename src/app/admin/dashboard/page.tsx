@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -61,18 +62,15 @@ export default function AdminDashboard() {
   const { data: dbVisitors, loading: visitorsLoading } = useCollection(visitorsQuery);
   const { data: dbBlockedUsers, loading: blocksLoading } = useCollection(blockListQuery);
 
-  // Merge Firestore data with Mock data for demonstration
+  // Merge Firestore data with Mock data ONLY if Firestore is empty
   const visitors = useMemo(() => {
-    const firestoreData = dbVisitors || [];
-    // Filter out mock visitors that match real Firestore visitors by ID
-    const uniqueMocks = MOCK_VISITORS.filter(m => !firestoreData.some(f => f.institutionalId === m.institutionalId));
-    return [...firestoreData, ...uniqueMocks];
+    if (dbVisitors && dbVisitors.length > 0) return dbVisitors;
+    return MOCK_VISITORS;
   }, [dbVisitors]);
 
   const blockedUsers = useMemo(() => {
-    const firestoreData = dbBlockedUsers || [];
-    const uniqueMocks = MOCK_BLOCKED.filter(m => !firestoreData.some(f => f.institutionalId === m.institutionalId));
-    return [...firestoreData, ...uniqueMocks];
+    if (dbBlockedUsers && dbBlockedUsers.length > 0) return dbBlockedUsers;
+    return MOCK_BLOCKED;
   }, [dbBlockedUsers]);
 
   const stats = useMemo(() => {
@@ -86,7 +84,7 @@ export default function AdminDashboard() {
   }, [visitors, blockedUsers]);
 
   const filteredVisitors = useMemo(() => {
-    return visitors.filter(v => 
+    return (visitors as any[]).filter(v => 
       v.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       v.institutionalId?.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -95,23 +93,16 @@ export default function AdminDashboard() {
   const handleBlockUser = (visitor: any) => {
     if (!db) return;
     
-    // Check if already blocked in Firestore
-    const isAlreadyBlocked = dbBlockedUsers?.some(b => b.institutionalId === visitor.institutionalId);
-    if (isAlreadyBlocked) {
-      toast({ title: "Already Restricted", description: `${visitor.name} is already in the database.` });
-      return;
-    }
-
     const blockData = {
       name: visitor.name,
       institutionalId: visitor.institutionalId,
-      reason: "Blocked from Dashboard activity log",
+      reason: "Administrative Restriction",
       dateBlocked: new Date().toISOString().split('T')[0]
     };
 
     addDoc(collection(db, "blockList"), blockData)
       .then(() => {
-        toast({ title: "User Restricted", description: `${visitor.name} has been added to security database.` });
+        toast({ title: "User Restricted", description: `${visitor.name} has been restricted.` });
       })
       .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -129,7 +120,7 @@ export default function AdminDashboard() {
     try {
       const batch = writeBatch(db);
       
-      // Seed Visitors
+      // Seed Visitors (as real Firestore docs)
       MOCK_VISITORS.forEach((v) => {
         const ref = doc(collection(db, "visitors"));
         batch.set(ref, {
@@ -142,7 +133,7 @@ export default function AdminDashboard() {
         });
       });
 
-      // Seed Block List
+      // Seed Block List (as real Firestore docs)
       MOCK_BLOCKED.forEach((b) => {
         const ref = doc(collection(db, "blockList"));
         batch.set(ref, {
@@ -154,7 +145,7 @@ export default function AdminDashboard() {
       });
 
       await batch.commit();
-      toast({ title: "System Initialized", description: "Student logs and security database populated." });
+      toast({ title: "System Ready", description: "All student records and security files have been imported." });
     } catch (e) {
       console.error(e);
       toast({ variant: "destructive", title: "Error", description: "Failed to initialize records." });
@@ -174,15 +165,15 @@ export default function AdminDashboard() {
             <p className="text-muted-foreground text-sm">Real-time monitoring of campus library usage.</p>
           </div>
           
-          {(!dbVisitors || dbVisitors.length < 5) && (
+          {(!dbVisitors || dbVisitors.length === 0) && (
             <Button 
               onClick={seedDatabase} 
               disabled={isSeeding}
               variant="outline"
-              className="border-accent text-accent-foreground hover:bg-accent/10 gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs rounded-none shadow-sm"
+              className="border-[#FFD600] text-primary hover:bg-[#FFD600]/10 gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs rounded-none shadow-sm"
             >
               {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-              Import Students
+              Import Student Records
             </Button>
           )}
         </div>
@@ -321,12 +312,12 @@ export default function AdminDashboard() {
 
             <Card className="border-none shadow-lg rounded-none overflow-hidden bg-[#004D40] text-white">
               <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-3 text-accent">
+                <div className="flex items-center gap-3 text-[#FFD600]">
                   <AlertCircle className="w-5 h-5" />
                   <h4 className="font-bold text-xs uppercase tracking-widest">Security Protocol</h4>
                 </div>
                 <p className="text-[11px] leading-relaxed font-medium text-white/80 italic">
-                  "Ensure all restricted individuals are handled with protocol. Direct blocked visitors to the Main Circulation Desk for assistance or verification."
+                  "Ensure all restricted individuals are handled with protocol. Direct blocked visitors to the Main Circulation Desk for verification."
                 </p>
                 <div className="pt-2">
                   <Button className="w-full bg-white/10 hover:bg-white/20 text-white border-none rounded-none text-[10px] font-bold uppercase tracking-widest h-9">
