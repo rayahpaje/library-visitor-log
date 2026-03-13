@@ -47,6 +47,7 @@ export default function BlockListManagement() {
   const [newBlock, setNewBlock] = useState({ name: "", institutionalId: "", reason: "" });
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
   const blockListQuery = useMemo(() => {
     if (!db) return null;
@@ -56,10 +57,13 @@ export default function BlockListManagement() {
   const { data: dbBlockedUsers, loading } = useCollection(blockListQuery);
 
   const blockedUsers = useMemo(() => {
-    // Priority to Firestore data. If empty, show mock data for visualization.
-    if (dbBlockedUsers && dbBlockedUsers.length > 0) return dbBlockedUsers;
-    return MOCK_BLOCKED;
-  }, [dbBlockedUsers]);
+    const firestoreData = dbBlockedUsers || [];
+    const mockData = MOCK_BLOCKED.filter(m => 
+      !firestoreData.find(f => f.institutionalId === m.institutionalId) && 
+      !removedIds.has(m.id)
+    );
+    return [...firestoreData, ...mockData];
+  }, [dbBlockedUsers, removedIds]);
 
   const filteredBlockedUsers = useMemo(() => {
     return (blockedUsers as any[]).filter(user => 
@@ -85,7 +89,7 @@ export default function BlockListManagement() {
         setNewBlock({ name: "", institutionalId: "", reason: "" });
         setOpen(false);
         setIsAdding(false);
-        toast({ title: "Individual Restricted", description: `${newBlock.name} has been restricted.` });
+        toast({ title: "User Blocked", description: `${newBlock.name} has been restricted.` });
       })
       .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -101,12 +105,11 @@ export default function BlockListManagement() {
   const handleRemoveBlock = (user: any) => {
     if (!db) return;
     
-    // If it has a Firestore ID, delete it.
-    if (user.id) {
+    if (user.id && !user.id.startsWith('b')) {
       const docRef = doc(db, "blockList", user.id);
       deleteDoc(docRef)
         .then(() => {
-          toast({ title: "Access Restored", description: `${user.name}'s library privileges have been restored.` });
+          toast({ title: "Access Restored", description: `${user.name} is no longer restricted.` });
         })
         .catch(async (serverError) => {
           const permissionError = new FirestorePermissionError({
@@ -116,11 +119,8 @@ export default function BlockListManagement() {
           errorEmitter.emit('permission-error', permissionError);
         });
     } else {
-      // Mock unrestrict simulation
-      toast({ 
-        title: "Access Restored", 
-        description: `${user.name}'s access has been restored (Demo Record).` 
-      });
+      setRemovedIds(prev => new Set([...prev, user.id]));
+      toast({ title: "Access Restored", description: `${user.name} is no longer restricted.` });
     }
   };
 
@@ -132,16 +132,16 @@ export default function BlockListManagement() {
           <div>
             <h1 className="text-3xl font-bold text-primary flex items-center gap-3">
               <Ban className="w-8 h-8 text-destructive" />
-              Security Database
+              Security Block List
             </h1>
-            <p className="text-muted-foreground">Manage restricted individuals and maintain library safety.</p>
+            <p className="text-muted-foreground">Manage restricted students and maintain library safety.</p>
           </div>
           
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="bg-destructive hover:bg-destructive/90 text-white gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs shadow-lg rounded-none border-b-4 border-[#B00000]">
                 <Plus className="w-4 h-4" />
-                Manually Restrict
+                Manually Block
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] rounded-none border-none shadow-2xl">
@@ -150,15 +150,12 @@ export default function BlockListManagement() {
                   <ShieldAlert className="w-5 h-5 text-destructive" />
                   RESTRICT ACCESS
                 </DialogTitle>
-                <DialogDescription>
-                  Enter details for the individual who will be restricted from library access.
-                </DialogDescription>
+                <DialogDescription>Enter details to block student access.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="name" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Full Name</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Full Name</Label>
                   <Input 
-                    id="name" 
                     placeholder="John Doe" 
                     className="bg-[#F4F7F5] border-none font-medium h-10 rounded-none"
                     value={newBlock.name}
@@ -166,20 +163,18 @@ export default function BlockListManagement() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="id" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Institutional ID / Email</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Student ID</Label>
                   <Input 
-                    id="id" 
-                    placeholder="e.g. 2019-XXXX" 
+                    placeholder="2021-XXXX" 
                     className="bg-[#F4F7F5] border-none font-medium h-10 rounded-none"
                     value={newBlock.institutionalId}
                     onChange={(e) => setNewBlock({...newBlock, institutionalId: e.target.value})}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="reason" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Reason for Restriction</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Reason</Label>
                   <Textarea 
-                    id="reason" 
-                    placeholder="Detail the violation or security concern..." 
+                    placeholder="Detail the concern..." 
                     className="bg-[#F4F7F5] border-none font-medium min-h-[100px] rounded-none"
                     value={newBlock.reason}
                     onChange={(e) => setNewBlock({...newBlock, reason: e.target.value})}
@@ -189,7 +184,7 @@ export default function BlockListManagement() {
               <DialogFooter className="gap-2">
                 <Button variant="outline" className="rounded-none font-bold uppercase text-xs" onClick={() => setOpen(false)}>Cancel</Button>
                 <Button variant="destructive" className="rounded-none font-bold uppercase text-xs shadow-md" onClick={handleAddBlock} disabled={isAdding}>
-                  {isAdding ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Confirm Restriction"}
+                  {isAdding ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Confirm Block"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -200,13 +195,12 @@ export default function BlockListManagement() {
           <Card className="lg:col-span-2 border-none shadow-sm rounded-none overflow-hidden bg-white">
             <CardHeader className="pb-4 bg-white border-b flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Blocked Visitors</CardTitle>
-                <CardDescription className="text-xs">Active restrictions currently being enforced.</CardDescription>
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Restricted Students</CardTitle>
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Filter blocked users..." 
+                  placeholder="Filter block list..." 
                   className="pl-9 w-[240px] h-9 text-xs border-muted-foreground/20 rounded-none" 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -222,9 +216,8 @@ export default function BlockListManagement() {
                 <Table>
                   <TableHeader className="bg-[#F8F9FA]">
                     <TableRow>
-                      <TableHead className="text-[10px] font-bold uppercase py-4">Individual</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase py-4">Student</TableHead>
                       <TableHead className="text-[10px] font-bold uppercase">Date Blocked</TableHead>
-                      <TableHead className="text-[10px] font-bold uppercase">Reason</TableHead>
                       <TableHead className="text-[10px] font-bold uppercase text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -236,9 +229,6 @@ export default function BlockListManagement() {
                           <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{user.institutionalId}</div>
                         </TableCell>
                         <TableCell className="text-xs font-medium">{user.dateBlocked}</TableCell>
-                        <TableCell className="text-xs italic text-muted-foreground max-w-[200px] truncate" title={user.reason}>
-                          {user.reason || "No reason specified"}
-                        </TableCell>
                         <TableCell className="text-right">
                           <Button 
                             variant="outline" 
@@ -247,18 +237,11 @@ export default function BlockListManagement() {
                             onClick={() => handleRemoveBlock(user)}
                           >
                             <UserCheck className="w-3.5 h-3.5" />
-                            Unrestrict Access
+                            Restore Access
                           </Button>
                         </TableCell>
                       </TableRow>
                     ))}
-                    {filteredBlockedUsers.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-12 text-muted-foreground text-sm italic">
-                          No restricted individuals found.
-                        </TableCell>
-                      </TableRow>
-                    )}
                   </TableBody>
                 </Table>
               )}
@@ -270,16 +253,11 @@ export default function BlockListManagement() {
               <UserX className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10" />
               <CardHeader>
                 <CardTitle className="text-sm font-bold uppercase tracking-widest">Policy Enforcement</CardTitle>
-                <CardDescription className="text-white/70 text-xs">
-                  Restriction on access is a critical measure for institutional safety.
-                </CardDescription>
+                <CardDescription className="text-white/70 text-xs">Blocked students cannot access the library.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-4 bg-white/10 border-l-2 border-white/30 text-xs leading-relaxed font-medium">
-                  <strong>Security:</strong> All visitor IDs are automatically checked against this database during sign-in.
-                </div>
-                <div className="p-4 bg-white/10 border-l-2 border-white/30 text-xs leading-relaxed font-medium">
-                  <strong>Logging:</strong> All blocked entry attempts are recorded for monitoring.
+                <div className="p-4 bg-white/10 border-l-2 border-white/30 text-xs font-medium">
+                  <strong>Verification:</strong> Entry system checks this list automatically.
                 </div>
               </CardContent>
             </Card>

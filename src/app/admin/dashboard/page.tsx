@@ -52,7 +52,6 @@ export default function AdminDashboard() {
     setIsClient(true);
   }, []);
 
-  // Queries
   const visitorsQuery = useMemo(() => {
     if (!db) return null;
     return query(collection(db, "visitors"), orderBy("timeIn", "desc"), limit(100));
@@ -66,7 +65,10 @@ export default function AdminDashboard() {
   const { data: dbVisitors, loading: visitorsLoading } = useCollection(visitorsQuery);
   const { data: dbBlockedUsers, loading: blocksLoading } = useCollection(blockListQuery);
 
-  // Merge Firestore data with Mock data to ensure the list is always "full"
+  const blockedUserIds = useMemo(() => {
+    return new Set((dbBlockedUsers || []).map(u => u.institutionalId));
+  }, [dbBlockedUsers]);
+
   const visitors = useMemo(() => {
     const firestoreData = dbVisitors || [];
     const mockData = MOCK_VISITORS.filter(m => !firestoreData.find(f => f.institutionalId === m.institutionalId));
@@ -80,14 +82,14 @@ export default function AdminDashboard() {
   }, [dbBlockedUsers]);
 
   const stats = useMemo(() => {
-    const activeCount = visitors.filter(v => v.status === "Active").length;
+    const activeCount = visitors.filter(v => !blockedUserIds.has(v.institutionalId)).length;
     return [
       { title: "Today's Visitors", value: visitors.length.toString(), icon: Users },
       { title: "This Week", value: (visitors.length * 4.5).toFixed(0), icon: TrendingUp },
       { title: "Blocked", value: blockedUsers.length.toString(), icon: Ban },
       { title: "Active Sessions", value: activeCount.toString(), icon: UserCheck },
     ];
-  }, [visitors, blockedUsers]);
+  }, [visitors, blockedUsers, blockedUserIds]);
 
   const filteredVisitors = useMemo(() => {
     return (visitors as any[]).filter(v => 
@@ -108,7 +110,7 @@ export default function AdminDashboard() {
 
     addDoc(collection(db, "blockList"), blockData)
       .then(() => {
-        toast({ title: "User Restricted", description: `${visitor.name} has been restricted.` });
+        toast({ title: "User Blocked", description: `${visitor.name} has been restricted.` });
       })
       .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -125,8 +127,6 @@ export default function AdminDashboard() {
     setIsSeeding(true);
     try {
       const batch = writeBatch(db);
-      
-      // Seed Visitors
       MOCK_VISITORS.forEach((v) => {
         const ref = doc(collection(db, "visitors"));
         batch.set(ref, {
@@ -135,12 +135,11 @@ export default function AdminDashboard() {
           college: v.college,
           purpose: v.purpose,
           timeIn: v.timeIn,
-          status: v.status
+          status: "Active"
         });
       });
-
       await batch.commit();
-      toast({ title: "Records Imported", description: "Database has been populated with student records." });
+      toast({ title: "Database Initialized", description: "Student records have been imported." });
     } catch (e) {
       console.error(e);
       toast({ variant: "destructive", title: "Error", description: "Failed to initialize records." });
@@ -161,14 +160,12 @@ export default function AdminDashboard() {
   return (
     <div className="flex min-h-screen bg-[#F8F9FA] font-body">
       <AdminSidebar />
-      
       <main className="flex-1 p-8 space-y-8 overflow-y-auto">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-primary tracking-tight">Library Overview</h1>
-            <p className="text-muted-foreground text-sm">Real-time monitoring of campus library usage.</p>
+            <p className="text-muted-foreground text-sm">Monitor activity and manage security restrictions.</p>
           </div>
-          
           <Button 
             onClick={seedDatabase} 
             disabled={isSeeding}
@@ -180,7 +177,6 @@ export default function AdminDashboard() {
           </Button>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat) => (
             <Card key={stat.title} className="border-none shadow-sm rounded-none bg-white overflow-hidden group hover:shadow-md transition-shadow">
@@ -199,10 +195,7 @@ export default function AdminDashboard() {
           <div className="lg:col-span-2 space-y-8">
             <Card className="border-none shadow-sm rounded-none overflow-hidden bg-white">
               <CardHeader className="pb-4 border-b">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Visitor Activity Logs</CardTitle>
-                </div>
-                
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Visitor Activity Logs</CardTitle>
                 <div className="flex items-center gap-6 mt-6">
                   <RadioGroup defaultValue="day" className="flex items-center gap-6">
                     {['Day', 'Week', 'Month'].map(period => (
@@ -212,7 +205,6 @@ export default function AdminDashboard() {
                       </div>
                     ))}
                   </RadioGroup>
-                  
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
                     <Input 
@@ -231,47 +223,50 @@ export default function AdminDashboard() {
                       <TableHead className="font-bold text-black text-center text-[10px] uppercase tracking-widest h-10">Time In</TableHead>
                       <TableHead className="font-bold text-black text-center text-[10px] uppercase tracking-widest h-10">Student Name</TableHead>
                       <TableHead className="font-bold text-black text-center text-[10px] uppercase tracking-widest h-10">College</TableHead>
-                      <TableHead className="font-bold text-black text-center text-[10px] uppercase tracking-widest h-10">Purpose</TableHead>
                       <TableHead className="font-bold text-black text-center text-[10px] uppercase tracking-widest h-10">Status</TableHead>
                       <TableHead className="sr-only">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredVisitors.slice(0, 20).map((visitor: any) => (
-                      <TableRow key={visitor.id || visitor.name} className="hover:bg-gray-50 text-center group border-b last:border-0">
-                        <TableCell className="text-xs font-medium py-4">
-                          {formatTime(visitor.timeIn)}
-                        </TableCell>
-                        <TableCell className="text-xs font-bold text-primary py-4">{visitor.name}</TableCell>
-                        <TableCell className="text-[11px] py-4">{visitor.college}</TableCell>
-                        <TableCell className="text-[11px] italic text-muted-foreground py-4">{visitor.purpose}</TableCell>
-                        <TableCell className="py-4">
-                          <Badge 
-                            className={cn(
-                              "border-none px-3 py-0.5 font-bold uppercase text-[9px] tracking-widest rounded-none",
-                              visitor.status === "Active" 
-                                ? "bg-[#C8E6C9] text-[#2E7D32]"
-                                : "bg-gray-200 text-gray-600"
+                    {filteredVisitors.slice(0, 15).map((visitor: any) => {
+                      const isBlocked = blockedUserIds.has(visitor.institutionalId);
+                      return (
+                        <TableRow key={visitor.id || visitor.name} className="hover:bg-gray-50 text-center group border-b last:border-0">
+                          <TableCell className="text-xs font-medium py-4">
+                            {formatTime(visitor.timeIn)}
+                          </TableCell>
+                          <TableCell className="text-xs font-bold text-primary py-4">{visitor.name}</TableCell>
+                          <TableCell className="text-[11px] py-4">{visitor.college}</TableCell>
+                          <TableCell className="py-4">
+                            <Badge 
+                              className={cn(
+                                "border-none px-3 py-0.5 font-bold uppercase text-[9px] tracking-widest rounded-none",
+                                isBlocked 
+                                  ? "bg-destructive/10 text-destructive"
+                                  : "bg-[#C8E6C9] text-[#2E7D32]"
+                              )}
+                            >
+                              {isBlocked ? "BLOCK" : "ACTIVE"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="py-4">
+                            {!isBlocked && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none group-hover:bg-muted"><MoreVertical className="h-4 w-4" /></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="rounded-none border-none shadow-xl">
+                                  <DropdownMenuItem onClick={() => handleBlockUser(visitor)} className="text-destructive font-bold uppercase text-[10px] tracking-widest cursor-pointer">
+                                    <Ban className="w-3.5 h-3.5 mr-2" />
+                                    Block Access
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             )}
-                          >
-                            {visitor.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-4">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none group-hover:bg-muted"><MoreVertical className="h-4 w-4" /></Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="rounded-none border-none shadow-xl">
-                              <DropdownMenuItem onClick={() => handleBlockUser(visitor)} className="text-destructive font-bold uppercase text-[10px] tracking-widest cursor-pointer">
-                                <Ban className="w-3.5 h-3.5 mr-2" />
-                                Restrict Access
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -296,7 +291,7 @@ export default function AdminDashboard() {
                       <TableRow key={user.id || user.name} className="hover:bg-destructive/5 border-b last:border-0">
                         <TableCell className="text-xs font-bold px-6 py-4">{user.name}</TableCell>
                         <TableCell className="text-right px-6 py-4">
-                          <Badge className="bg-[#FFEBEE] text-[#C62828] border-none text-[9px] font-bold px-2 py-0.5 tracking-widest rounded-none uppercase">RESTRICTED</Badge>
+                          <Badge className="bg-[#FFEBEE] text-[#C62828] border-none text-[9px] font-bold px-2 py-0.5 tracking-widest rounded-none uppercase">BLOCK</Badge>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -305,7 +300,7 @@ export default function AdminDashboard() {
                 <div className="p-4 border-t bg-gray-50 text-center">
                   <Button variant="link" asChild className="text-[10px] font-bold uppercase tracking-widest text-primary hover:no-underline">
                     <a href="/admin/block-list">
-                      Manage Security Database <ArrowRight className="w-3 h-3 ml-2" />
+                      Manage Block List <ArrowRight className="w-3 h-3 ml-2" />
                     </a>
                   </Button>
                 </div>
