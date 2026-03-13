@@ -1,3 +1,16 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "library-hero",
+      "description": "A modern library interior with tall bookshelves and study areas",
+      "imageUrl": "https://picsum.photos/seed/neu-library/1200/800",
+      "imageHint": "library interior"
+    },
+    {
+      "id": "neu-logo",
+      "description": "A symbolic professional crest representing knowledge",
+      "imageUrl": "https://picsum.photos/seed/neu-crest/200/200",
+      "imageHint": "university crest"
+    }
+  ]
 }
