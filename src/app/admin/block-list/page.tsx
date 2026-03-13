@@ -11,7 +11,6 @@ import {
   UserCheck,
   ShieldAlert,
   Loader2,
-  AlertTriangle,
   UserX
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { 
   Dialog,
   DialogContent,
@@ -58,9 +56,10 @@ export default function BlockListManagement() {
   const { data: dbBlockedUsers, loading } = useCollection(blockListQuery);
 
   const blockedUsers = useMemo(() => {
-    // If Firestore has records, only show those. If empty, show mocks.
-    if (dbBlockedUsers && dbBlockedUsers.length > 0) return dbBlockedUsers;
-    return MOCK_BLOCKED;
+    // Merge real Firestore records with Mocks, prioritizing real records for the same ID
+    const firestoreData = dbBlockedUsers || [];
+    const mockData = MOCK_BLOCKED.filter(m => !firestoreData.find(f => f.institutionalId === m.institutionalId));
+    return [...firestoreData, ...mockData];
   }, [dbBlockedUsers]);
 
   const filteredBlockedUsers = useMemo(() => {
@@ -103,10 +102,8 @@ export default function BlockListManagement() {
   const handleRemoveBlock = (user: any) => {
     if (!db) return;
     
-    // Check if it's a real Firestore doc (long ID) vs Mock (ID starts with 'b')
-    const isMock = user.id?.toString().startsWith('b') && user.id?.length < 5;
-
-    if (user.id && !isMock) {
+    // If it has a Firestore ID (usually 20 chars), delete it from DB.
+    if (user.id && user.id.length > 5) {
       const docRef = doc(db, "blockList", user.id);
       deleteDoc(docRef)
         .then(() => {
@@ -120,9 +117,10 @@ export default function BlockListManagement() {
           errorEmitter.emit('permission-error', permissionError);
         });
     } else {
+      // For demo/mock students, we simulate the restoration
       toast({ 
-        title: "Import Required", 
-        description: "To unrestrict this demo student, please click 'Import Student Records' on the Dashboard first." 
+        title: "Access Restored", 
+        description: `${user.name}'s access has been restored (Simulation).` 
       });
     }
   };

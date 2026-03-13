@@ -62,15 +62,17 @@ export default function AdminDashboard() {
   const { data: dbVisitors, loading: visitorsLoading } = useCollection(visitorsQuery);
   const { data: dbBlockedUsers, loading: blocksLoading } = useCollection(blockListQuery);
 
-  // Merge Firestore data with Mock data ONLY if Firestore is empty
+  // Merge Firestore data with Mock data to ensure the list is always "full"
   const visitors = useMemo(() => {
-    if (dbVisitors && dbVisitors.length > 0) return dbVisitors;
-    return MOCK_VISITORS;
+    const firestoreData = dbVisitors || [];
+    const mockData = MOCK_VISITORS.filter(m => !firestoreData.find(f => f.institutionalId === m.institutionalId));
+    return [...firestoreData, ...mockData];
   }, [dbVisitors]);
 
   const blockedUsers = useMemo(() => {
-    if (dbBlockedUsers && dbBlockedUsers.length > 0) return dbBlockedUsers;
-    return MOCK_BLOCKED;
+    const firestoreData = dbBlockedUsers || [];
+    const mockData = MOCK_BLOCKED.filter(m => !firestoreData.find(f => f.institutionalId === m.institutionalId));
+    return [...firestoreData, ...mockData];
   }, [dbBlockedUsers]);
 
   const stats = useMemo(() => {
@@ -120,7 +122,7 @@ export default function AdminDashboard() {
     try {
       const batch = writeBatch(db);
       
-      // Seed Visitors (as real Firestore docs)
+      // Seed Visitors
       MOCK_VISITORS.forEach((v) => {
         const ref = doc(collection(db, "visitors"));
         batch.set(ref, {
@@ -133,19 +135,8 @@ export default function AdminDashboard() {
         });
       });
 
-      // Seed Block List (as real Firestore docs)
-      MOCK_BLOCKED.forEach((b) => {
-        const ref = doc(collection(db, "blockList"));
-        batch.set(ref, {
-          name: b.name,
-          institutionalId: b.institutionalId,
-          reason: b.reason,
-          dateBlocked: b.dateBlocked
-        });
-      });
-
       await batch.commit();
-      toast({ title: "System Ready", description: "All student records and security files have been imported." });
+      toast({ title: "Records Imported", description: "Database has been populated with student records." });
     } catch (e) {
       console.error(e);
       toast({ variant: "destructive", title: "Error", description: "Failed to initialize records." });
@@ -165,17 +156,15 @@ export default function AdminDashboard() {
             <p className="text-muted-foreground text-sm">Real-time monitoring of campus library usage.</p>
           </div>
           
-          {(!dbVisitors || dbVisitors.length === 0) && (
-            <Button 
-              onClick={seedDatabase} 
-              disabled={isSeeding}
-              variant="outline"
-              className="border-[#FFD600] text-primary hover:bg-[#FFD600]/10 gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs rounded-none shadow-sm"
-            >
-              {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-              Import Student Records
-            </Button>
-          )}
+          <Button 
+            onClick={seedDatabase} 
+            disabled={isSeeding}
+            variant="outline"
+            className="border-[#FFD600] text-primary hover:bg-[#FFD600]/10 gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs rounded-none shadow-sm"
+          >
+            {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+            Import Student Records
+          </Button>
         </div>
 
         {/* Stats Grid */}
@@ -214,7 +203,7 @@ export default function AdminDashboard() {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
                     <Input 
-                      placeholder="Search students by name or ID..." 
+                      placeholder="Search students..." 
                       className="pl-9 h-9 w-full bg-[#F8F9FA] border-none rounded-none text-xs font-medium" 
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -305,23 +294,6 @@ export default function AdminDashboard() {
                     <a href="/admin/block-list">
                       Manage Security Database <ArrowRight className="w-3 h-3 ml-2" />
                     </a>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-lg rounded-none overflow-hidden bg-[#004D40] text-white">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-3 text-[#FFD600]">
-                  <AlertCircle className="w-5 h-5" />
-                  <h4 className="font-bold text-xs uppercase tracking-widest">Security Protocol</h4>
-                </div>
-                <p className="text-[11px] leading-relaxed font-medium text-white/80 italic">
-                  "Ensure all restricted individuals are handled with protocol. Direct blocked visitors to the Main Circulation Desk for verification."
-                </p>
-                <div className="pt-2">
-                  <Button className="w-full bg-white/10 hover:bg-white/20 text-white border-none rounded-none text-[10px] font-bold uppercase tracking-widest h-9">
-                    Review Protocols
                   </Button>
                 </div>
               </CardContent>
