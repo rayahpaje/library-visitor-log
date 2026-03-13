@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -40,6 +41,7 @@ import { collection, addDoc, doc, deleteDoc } from "firebase/firestore";
 import { toast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
+import { MOCK_BLOCKED } from "@/lib/mock-data";
 
 export default function BlockListManagement() {
   const db = useFirestore();
@@ -53,10 +55,14 @@ export default function BlockListManagement() {
     return collection(db, "blockList");
   }, [db]);
 
-  const { data: blockedUsers, loading } = useCollection(blockListQuery);
+  const { data: dbBlockedUsers, loading } = useCollection(blockListQuery);
+
+  const blockedUsers = useMemo(() => {
+    if (dbBlockedUsers && dbBlockedUsers.length > 0) return dbBlockedUsers;
+    return MOCK_BLOCKED;
+  }, [dbBlockedUsers]);
 
   const filteredBlockedUsers = useMemo(() => {
-    if (!blockedUsers) return [];
     return (blockedUsers as any[]).filter(user => 
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       user.institutionalId?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -94,7 +100,10 @@ export default function BlockListManagement() {
   };
 
   const handleRemoveBlock = (id: string, name: string) => {
-    if (!db) return;
+    if (!db || !id) {
+      toast({ title: "Mock Record", description: "This is a demonstration record and cannot be deleted from the database." });
+      return;
+    }
     
     const docRef = doc(db, "blockList", id);
     deleteDoc(docRef)
@@ -200,7 +209,7 @@ export default function BlockListManagement() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              {loading ? (
+              {loading && dbBlockedUsers?.length === 0 ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-destructive" />
                 </div>
@@ -216,7 +225,7 @@ export default function BlockListManagement() {
                   </TableHeader>
                   <TableBody>
                     {filteredBlockedUsers.map((user: any) => (
-                      <TableRow key={user.id} className="group hover:bg-muted/30">
+                      <TableRow key={user.id || user.name} className="group hover:bg-muted/30">
                         <TableCell>
                           <div className="font-bold text-sm">{user.name}</div>
                           <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{user.institutionalId}</div>
@@ -238,13 +247,6 @@ export default function BlockListManagement() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {filteredBlockedUsers.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-12 text-xs text-muted-foreground italic">
-                          No restricted individuals found.
-                        </TableCell>
-                      </TableRow>
-                    )}
                   </TableBody>
                 </Table>
               )}
@@ -276,7 +278,7 @@ export default function BlockListManagement() {
               </CardHeader>
               <CardContent className="p-4 space-y-4">
                 {filteredBlockedUsers?.slice(0, 5).map((user: any) => (
-                  <div key={user.id} className="flex gap-3 items-start border-b border-secondary pb-4 last:border-0 last:pb-0">
+                  <div key={user.id || user.name} className="flex gap-3 items-start border-b border-secondary pb-4 last:border-0 last:pb-0">
                     <div className="p-2 bg-destructive/10 rounded-sm">
                       <AlertTriangle className="w-3 h-3 text-destructive" />
                     </div>
@@ -286,9 +288,6 @@ export default function BlockListManagement() {
                     </div>
                   </div>
                 ))}
-                {(!filteredBlockedUsers || filteredBlockedUsers.length === 0) && (
-                  <p className="text-xs text-muted-foreground text-center py-4">No recent records.</p>
-                )}
               </CardContent>
             </Card>
           </div>

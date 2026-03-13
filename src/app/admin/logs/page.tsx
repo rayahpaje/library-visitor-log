@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -42,6 +43,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
+import { MOCK_VISITORS } from "@/lib/mock-data";
 
 export default function VisitorLogs() {
   const db = useFirestore();
@@ -55,18 +57,22 @@ export default function VisitorLogs() {
 
   const { data: dbLogs, loading } = useCollection(logsQuery);
 
+  const logs = useMemo(() => {
+    if (dbLogs && dbLogs.length > 0) return dbLogs;
+    return MOCK_VISITORS;
+  }, [dbLogs]);
+
   const filteredLogs = useMemo(() => {
-    if (!dbLogs) return [];
-    return (dbLogs as any[]).filter(log => {
+    return (logs as any[]).filter(log => {
       const matchesSearch = log.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            log.institutionalId?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCollege = filterCollege === "all" || log.college === filterCollege;
       return matchesSearch && matchesCollege;
     });
-  }, [dbLogs, searchTerm, filterCollege]);
+  }, [logs, searchTerm, filterCollege]);
 
   const handleCheckout = (id: string) => {
-    if (!db) return;
+    if (!db || !id) return;
     const docRef = doc(db, "visitors", id);
     updateDoc(docRef, { status: "Logged Out" })
       .then(() => {
@@ -83,7 +89,7 @@ export default function VisitorLogs() {
   };
 
   const handleDelete = (id: string) => {
-    if (!db) return;
+    if (!db || !id) return;
     const docRef = doc(db, "visitors", id);
     deleteDoc(docRef)
       .then(() => {
@@ -177,7 +183,7 @@ export default function VisitorLogs() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {loading ? (
+            {loading && dbLogs?.length === 0 ? (
               <div className="flex justify-center py-24">
                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
               </div>
@@ -196,7 +202,7 @@ export default function VisitorLogs() {
                 </TableHeader>
                 <TableBody>
                   {filteredLogs.map((log: any) => (
-                    <TableRow key={log.id} className="hover:bg-gray-50">
+                    <TableRow key={log.id || log.name} className="hover:bg-gray-50">
                       <TableCell className="font-bold text-primary">{log.name}</TableCell>
                       <TableCell className="text-center font-medium">{log.institutionalId}</TableCell>
                       <TableCell className="text-center">
@@ -233,7 +239,7 @@ export default function VisitorLogs() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="rounded-none border-none shadow-xl">
-                            {log.status === 'Active' && (
+                            {log.status === 'Active' && log.id && (
                               <DropdownMenuItem onClick={() => handleCheckout(log.id)} className="font-bold text-xs uppercase tracking-widest">
                                 Checkout Student
                               </DropdownMenuItem>
@@ -242,25 +248,22 @@ export default function VisitorLogs() {
                               <Ban className="w-4 h-4 mr-2" />
                               Restrict Access
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              className="text-muted-foreground font-bold text-xs uppercase tracking-widest" 
-                              onClick={() => handleDelete(log.id)}
-                            >
-                              Delete Record
-                            </DropdownMenuItem>
+                            {log.id && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  className="text-muted-foreground font-bold text-xs uppercase tracking-widest" 
+                                  onClick={() => handleDelete(log.id)}
+                                >
+                                  Delete Record
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
-                  {filteredLogs.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-12 text-xs text-muted-foreground italic">
-                        No activity records found matching your filters.
-                      </TableCell>
-                    </TableRow>
-                  )}
                 </TableBody>
               </Table>
             )}

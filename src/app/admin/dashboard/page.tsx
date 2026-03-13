@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -12,7 +13,8 @@ import {
   FileText, 
   Loader2,
   AlertCircle,
-  MoreVertical
+  MoreVertical,
+  Database
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,7 +28,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, limit, doc, addDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, addDoc, getDocs, writeBatch, doc } from "firebase/firestore";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { 
@@ -38,10 +40,12 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
+import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
 
 export default function AdminDashboard() {
   const db = useFirestore();
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const visitorsQuery = useMemo(() => {
     if (!db) return null;
@@ -56,22 +60,33 @@ export default function AdminDashboard() {
   const { data: dbVisitors, loading: visitorsLoading } = useCollection(visitorsQuery);
   const { data: dbBlockedUsers, loading: blocksLoading } = useCollection(blockListQuery);
 
+  // Use Firestore data if available, otherwise fallback to mock data for visual consistency
+  const visitors = useMemo(() => {
+    if (dbVisitors && dbVisitors.length > 0) return dbVisitors;
+    return MOCK_VISITORS;
+  }, [dbVisitors]);
+
+  const blockedUsers = useMemo(() => {
+    if (dbBlockedUsers && dbBlockedUsers.length > 0) return dbBlockedUsers;
+    return MOCK_BLOCKED;
+  }, [dbBlockedUsers]);
+
   const stats = useMemo(() => {
-    const activeCount = (dbVisitors as any[]).filter(v => v.status === "Active").length;
+    const activeCount = (visitors as any[]).filter(v => v.status === "Active").length;
     return [
-      { title: "Today's Visitors", value: dbVisitors.length.toString(), icon: Users },
-      { title: "This Week", value: (dbVisitors.length * 4.5).toFixed(0), icon: TrendingUp },
-      { title: "Blocked", value: dbBlockedUsers.length.toString(), icon: Ban },
+      { title: "Today's Visitors", value: visitors.length.toString(), icon: Users },
+      { title: "This Week", value: (visitors.length * 4.5).toFixed(0), icon: TrendingUp },
+      { title: "Blocked", value: blockedUsers.length.toString(), icon: Ban },
       { title: "Active Sessions", value: activeCount.toString(), icon: UserCheck },
     ];
-  }, [dbVisitors, dbBlockedUsers]);
+  }, [visitors, blockedUsers]);
 
   const filteredVisitors = useMemo(() => {
-    return (dbVisitors as any[]).filter(v => 
+    return (visitors as any[]).filter(v => 
       v.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       v.institutionalId?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [dbVisitors, searchTerm]);
+  }, [visitors, searchTerm]);
 
   const handleBlockUser = (visitor: any) => {
     if (!db) return;
@@ -97,6 +112,44 @@ export default function AdminDashboard() {
       });
   };
 
+  const seedDatabase = async () => {
+    if (!db) return;
+    setIsSeeding(true);
+    try {
+      const batch = writeBatch(db);
+      
+      MOCK_VISITORS.forEach((v) => {
+        const ref = doc(collection(db, "visitors"));
+        batch.set(ref, {
+          name: v.name,
+          institutionalId: v.institutionalId,
+          college: v.college,
+          purpose: v.purpose,
+          timeIn: v.timeIn,
+          status: v.status
+        });
+      });
+
+      MOCK_BLOCKED.forEach((b) => {
+        const ref = doc(collection(db, "blockList"));
+        batch.set(ref, {
+          name: b.name,
+          institutionalId: b.institutionalId,
+          reason: b.reason,
+          dateBlocked: b.dateBlocked
+        });
+      });
+
+      await batch.commit();
+      toast({ title: "Database Initialized", description: "All student records have been imported." });
+    } catch (e) {
+      console.error(e);
+      toast({ variant: "destructive", title: "Error", description: "Failed to import records." });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-[#F8F9FA] font-body">
       <AdminSidebar />
@@ -107,6 +160,16 @@ export default function AdminDashboard() {
             <h1 className="text-3xl font-bold text-primary tracking-tight">Library Overview</h1>
             <p className="text-muted-foreground text-sm">Real-time monitoring of campus library usage.</p>
           </div>
+          {(!dbVisitors || dbVisitors.length === 0) && (
+            <Button 
+              onClick={seedDatabase} 
+              disabled={isSeeding}
+              className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2 h-10 px-6 font-bold uppercase tracking-wider text-xs rounded-none shadow-md"
+            >
+              {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+              Import Student Database
+            </Button>
+          )}
         </div>
 
         {/* Stats Row */}
@@ -125,7 +188,6 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Logs Table */}
           <div className="lg:col-span-2 space-y-8">
             <Card className="border-none shadow-sm rounded-none overflow-hidden bg-white">
               <CardHeader className="pb-4 border-b">
@@ -162,7 +224,7 @@ export default function AdminDashboard() {
                 </div>
                 
                 <div className="overflow-hidden border border-muted-foreground/10">
-                  {visitorsLoading ? (
+                  {visitorsLoading && dbVisitors?.length === 0 ? (
                     <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
                   ) : (
                     <Table>
@@ -178,7 +240,7 @@ export default function AdminDashboard() {
                       </TableHeader>
                       <TableBody>
                         {filteredVisitors.map((visitor: any) => (
-                          <TableRow key={visitor.id} className="hover:bg-gray-50 text-center">
+                          <TableRow key={visitor.id || visitor.name} className="hover:bg-gray-50 text-center">
                             <TableCell className="text-xs font-medium">
                               {visitor.timeIn ? new Date(visitor.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase() : "N/A"}
                             </TableCell>
@@ -209,13 +271,6 @@ export default function AdminDashboard() {
                             </TableCell>
                           </TableRow>
                         ))}
-                        {filteredVisitors.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={6} className="text-center py-12 text-xs text-muted-foreground italic">
-                              No activity found.
-                            </TableCell>
-                          </TableRow>
-                        )}
                       </TableBody>
                     </Table>
                   )}
@@ -224,14 +279,13 @@ export default function AdminDashboard() {
             </Card>
           </div>
 
-          {/* Right Section */}
           <div className="space-y-8">
             <Card className="border-none shadow-sm rounded-none overflow-hidden bg-white">
               <CardHeader className="pb-4 border-b">
                 <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-primary">Blocked List</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {blocksLoading ? (
+                {blocksLoading && dbBlockedUsers?.length === 0 ? (
                   <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-destructive" /></div>
                 ) : (
                   <Table>
@@ -242,19 +296,14 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {dbBlockedUsers?.slice(0, 10).map((user: any) => (
-                        <TableRow key={user.id} className="hover:bg-destructive/5">
+                      {blockedUsers?.slice(0, 10).map((user: any) => (
+                        <TableRow key={user.id || user.name} className="hover:bg-destructive/5">
                           <TableCell className="text-xs font-bold px-6 py-4">{user.name}</TableCell>
                           <TableCell className="text-right px-6 py-4">
                             <Badge className="bg-[#FFEBEE] text-[#C62828] border-none text-[9px] font-bold px-2 py-0.5 tracking-widest rounded-none uppercase">RESTRICTED</Badge>
                           </TableCell>
                         </TableRow>
                       ))}
-                      {!dbBlockedUsers?.length && (
-                        <TableRow>
-                          <TableCell colSpan={2} className="text-center py-8 text-xs text-muted-foreground">No active restrictions.</TableCell>
-                        </TableRow>
-                      )}
                     </TableBody>
                   </Table>
                 )}
