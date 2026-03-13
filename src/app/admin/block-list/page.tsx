@@ -11,7 +11,8 @@ import {
   Trash2, 
   UserX,
   ShieldAlert,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ export default function BlockListManagement() {
   const [isAdding, setIsAdding] = useState(false);
   const [newBlock, setNewBlock] = useState({ name: "", institutionalId: "", reason: "" });
   const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const blockListQuery = useMemo(() => {
     if (!db) return null;
@@ -52,9 +54,17 @@ export default function BlockListManagement() {
 
   const { data: blockedUsers, loading } = useCollection(blockListQuery);
 
+  const filteredBlockedUsers = useMemo(() => {
+    if (!blockedUsers) return [];
+    return blockedUsers.filter(user => 
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      user.institutionalId?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [blockedUsers, searchTerm]);
+
   const handleAddBlock = async () => {
     if (!db || !newBlock.name || !newBlock.institutionalId) {
-      toast({ variant: "destructive", title: "Missing info", description: "All fields are required." });
+      toast({ variant: "destructive", title: "Missing info", description: "Name and ID are required." });
       return;
     }
 
@@ -85,7 +95,7 @@ export default function BlockListManagement() {
   };
 
   return (
-    <div className="flex bg-background min-h-screen">
+    <div className="flex bg-[#F8F9FA] min-h-screen">
       <AdminSidebar />
       <main className="flex-1 p-8 space-y-8 overflow-y-auto">
         <div className="flex justify-between items-center">
@@ -99,16 +109,16 @@ export default function BlockListManagement() {
           
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-destructive hover:bg-destructive/90 text-white gap-2">
+              <Button className="bg-destructive hover:bg-destructive/90 text-white gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs shadow-lg">
                 <Plus className="w-4 h-4" />
                 Restrict Access
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] rounded-none border-none shadow-2xl">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
+                <DialogTitle className="flex items-center gap-2 text-primary font-bold">
                   <ShieldAlert className="w-5 h-5 text-destructive" />
-                  Add to Block List
+                  RESTRICT ACCESS
                 </DialogTitle>
                 <DialogDescription>
                   Enter details for the individual who will be restricted from library access.
@@ -116,36 +126,39 @@ export default function BlockListManagement() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Full Name</Label>
                   <Input 
                     id="name" 
                     placeholder="John Doe" 
+                    className="bg-[#F4F7F5] border-none font-medium h-10"
                     value={newBlock.name}
                     onChange={(e) => setNewBlock({...newBlock, name: e.target.value})}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="id">Institutional ID / Email</Label>
+                  <Label htmlFor="id" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Institutional ID / Email</Label>
                   <Input 
                     id="id" 
                     placeholder="e.g. 2019-XXXX" 
+                    className="bg-[#F4F7F5] border-none font-medium h-10"
                     value={newBlock.institutionalId}
                     onChange={(e) => setNewBlock({...newBlock, institutionalId: e.target.value})}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="reason">Reason for Restriction</Label>
+                  <Label htmlFor="reason" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Reason for Restriction</Label>
                   <Textarea 
                     id="reason" 
                     placeholder="Detail the violation or security concern..." 
+                    className="bg-[#F4F7F5] border-none font-medium min-h-[100px]"
                     value={newBlock.reason}
                     onChange={(e) => setNewBlock({...newBlock, reason: e.target.value})}
                   />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button variant="destructive" onClick={handleAddBlock} disabled={isAdding}>
+              <DialogFooter className="gap-2">
+                <Button variant="outline" className="rounded-none font-bold uppercase text-xs" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button variant="destructive" className="rounded-none font-bold uppercase text-xs shadow-md" onClick={handleAddBlock} disabled={isAdding}>
                   {isAdding ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Confirm Restriction"}
                 </Button>
               </DialogFooter>
@@ -154,59 +167,66 @@ export default function BlockListManagement() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="lg:col-span-2 border-none shadow-sm">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle>Restricted Access Logs</CardTitle>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input placeholder="Filter blocked users..." className="pl-9 w-[240px]" />
-                </div>
+          <Card className="lg:col-span-2 border-none shadow-sm rounded-none overflow-hidden">
+            <CardHeader className="pb-4 bg-white border-b flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Security Database</CardTitle>
+                <CardDescription className="text-xs">Active restrictions currently being enforced.</CardDescription>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Filter blocked users..." 
+                  className="pl-9 w-[240px] h-9 text-xs border-muted-foreground/20" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {loading ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-destructive" />
                 </div>
               ) : (
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-[#F8F9FA]">
                     <TableRow>
-                      <TableHead className="font-bold">Individual</TableHead>
-                      <TableHead className="font-bold">Date Blocked</TableHead>
-                      <TableHead className="font-bold">Status</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase py-4">Individual</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase">Date Blocked</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase">Status</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {blockedUsers?.map((user) => (
-                      <TableRow key={user.id} className="group">
+                    {filteredBlockedUsers.map((user) => (
+                      <TableRow key={user.id} className="group hover:bg-muted/30">
                         <TableCell>
-                          <div className="font-medium">{user.name}</div>
-                          <div className="text-xs text-muted-foreground">{user.institutionalId}</div>
+                          <div className="font-bold text-sm">{user.name}</div>
+                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{user.institutionalId}</div>
                         </TableCell>
-                        <TableCell>{user.dateBlocked}</TableCell>
+                        <TableCell className="text-xs font-medium">{user.dateBlocked}</TableCell>
                         <TableCell>
-                          <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
-                            Blocked
+                          <Badge variant="destructive" className="bg-[#F8D7DA] text-[#842029] border-none text-[10px] font-bold px-3 py-0.5">
+                            RESTRICTED
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="text-muted-foreground hover:text-primary h-8 w-8"
                             onClick={() => handleRemoveBlock(user.id)}
+                            title="Remove Restriction"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
                     ))}
-                    {blockedUsers?.length === 0 && (
+                    {filteredBlockedUsers.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">
+                        <TableCell colSpan={4} className="text-center py-12 text-xs text-muted-foreground italic">
                           No restricted individuals found.
                         </TableCell>
                       </TableRow>
@@ -218,40 +238,43 @@ export default function BlockListManagement() {
           </Card>
 
           <div className="space-y-6">
-            <Card className="border-none bg-primary text-white shadow-lg overflow-hidden relative">
+            <Card className="border-none bg-primary text-white shadow-lg overflow-hidden relative rounded-none">
               <UserX className="absolute -right-4 -bottom-4 w-32 h-32 opacity-10" />
               <CardHeader>
-                <CardTitle className="text-lg">Policy Enforcement</CardTitle>
-                <CardDescription className="text-white/70">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest">Policy Enforcement</CardTitle>
+                <CardDescription className="text-white/70 text-xs">
                   Restriction on access is a critical measure for institutional safety.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-3 bg-white/10 rounded-lg text-sm">
-                  <strong>Security:</strong> All visitor IDs are automatically checked against this database.
+                <div className="p-4 bg-white/10 border-l-2 border-white/30 text-xs leading-relaxed font-medium">
+                  <strong>Security:</strong> All visitor IDs are automatically checked against this database during sign-in.
                 </div>
-                <div className="p-3 bg-white/10 rounded-lg text-sm">
-                  <strong>Logging:</strong> All blocked entry attempts are recorded for administrative review.
+                <div className="p-4 bg-white/10 border-l-2 border-white/30 text-xs leading-relaxed font-medium">
+                  <strong>Logging:</strong> All blocked entry attempts are recorded for administrative review and security monitoring.
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-bold">Recent Reasons</CardTitle>
+            <Card className="border-none shadow-sm rounded-none">
+              <CardHeader className="pb-4 border-b">
+                <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-primary">Recent Incident Log</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-4 space-y-4">
                 {blockedUsers?.slice(0, 5).map((user) => (
-                  <div key={user.id} className="flex gap-4 items-start border-b border-secondary pb-4 last:border-0 last:pb-0">
-                    <div className="p-2 bg-destructive/10 rounded-lg">
-                      <Ban className="w-4 h-4 text-destructive" />
+                  <div key={user.id} className="flex gap-3 items-start border-b border-secondary pb-4 last:border-0 last:pb-0">
+                    <div className="p-2 bg-destructive/10 rounded-sm">
+                      <AlertTriangle className="w-3 h-3 text-destructive" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold">{user.name}</p>
-                      <p className="text-xs text-muted-foreground italic">"{user.reason || 'No reason provided'}"</p>
+                      <p className="text-xs font-bold text-primary">{user.name}</p>
+                      <p className="text-[10px] text-muted-foreground italic leading-tight mt-1">"{user.reason || 'No reason specified'}"</p>
                     </div>
                   </div>
                 ))}
+                {(!blockedUsers || blockedUsers.length === 0) && (
+                  <p className="text-xs text-muted-foreground text-center py-4">No recent records.</p>
+                )}
               </CardContent>
             </Card>
           </div>

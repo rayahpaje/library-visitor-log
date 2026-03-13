@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -12,7 +13,9 @@ import {
   FileDown,
   Loader2,
   ShieldAlert,
-  Database
+  Database,
+  MoreVertical,
+  UserX
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,11 +29,17 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, limit, addDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 export default function AdminDashboard() {
   const db = useFirestore();
@@ -87,11 +96,26 @@ export default function AdminDashboard() {
         const { id, ...data } = b;
         await addDoc(collection(db, "blockList"), data);
       }
-      toast({ title: "Sample data generated", description: "The logs have been populated with real names." });
+      toast({ title: "Sample data generated", description: "The logs have been populated with sample records." });
     } catch (error) {
       console.error(error);
     } finally {
       setIsSeeding(false);
+    }
+  };
+
+  const handleBlockUser = async (visitor: any) => {
+    if (!db) return;
+    try {
+      await addDoc(collection(db, "blockList"), {
+        name: visitor.name,
+        institutionalId: visitor.institutionalId,
+        reason: "Blocked from Dashboard",
+        dateBlocked: new Date().toISOString().split('T')[0]
+      });
+      toast({ title: "User Blocked", description: `${visitor.name} has been added to the block list.` });
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -189,6 +213,7 @@ export default function AdminDashboard() {
                         <TableHead className="text-[10px] font-bold uppercase">College/Office</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase">Purpose</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase">Status</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -210,11 +235,29 @@ export default function AdminDashboard() {
                               {visitor.status || "ACTIVE"}
                             </Badge>
                           </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem 
+                                  className="text-destructive gap-2"
+                                  onClick={() => handleBlockUser(visitor)}
+                                >
+                                  <UserX className="w-4 h-4" />
+                                  Block User
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
                         </TableRow>
                       ))}
                       {filteredVisitors.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center py-10 text-xs text-muted-foreground italic">
+                          <TableCell colSpan={6} className="text-center py-10 text-xs text-muted-foreground italic">
                             No visitor records found.
                           </TableCell>
                         </TableRow>
