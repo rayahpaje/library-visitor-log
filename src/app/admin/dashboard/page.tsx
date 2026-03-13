@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { SiteHeader } from "@/components/site-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Users, 
   TrendingUp, 
@@ -10,9 +10,8 @@ import {
   UserCheck, 
   Search, 
   MoreHorizontal,
-  UserX,
   Loader2,
-  AlertCircle
+  ShieldAlert
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,7 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, limit, addDoc, doc, deleteDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, addDoc, doc, deleteDoc, where, getDocs } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { isToday, startOfWeek, isAfter, parseISO } from "date-fns";
 import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
@@ -79,26 +78,25 @@ export default function AdminDashboard() {
   }, [dbBlockedUsers]);
 
   const stats = useMemo(() => {
+    if (!isClient) return [
+      { title: "Today's Visitors", value: 0, icon: Users },
+      { title: "This Week", value: 0, icon: TrendingUp },
+      { title: "Blocked", value: 0, icon: Ban },
+      { title: "Active Sessions", value: 0, icon: UserCheck },
+    ];
+
     const today = new Date();
     const weekStart = startOfWeek(today);
 
     const todayCount = visitors.filter(v => {
-      try {
-        return isToday(parseISO(v.timeIn));
-      } catch {
-        return false;
-      }
+      try { return isToday(parseISO(v.timeIn)); } catch { return false; }
     }).length;
 
     const weekCount = visitors.filter(v => {
-      try {
-        return isAfter(parseISO(v.timeIn), weekStart);
-      } catch {
-        return false;
-      }
+      try { return isAfter(parseISO(v.timeIn), weekStart); } catch { return false; }
     }).length;
 
-    const totalBlocked = blockedUsers.length;
+    const totalBlocked = dbBlockedUsers?.length || MOCK_BLOCKED.length;
     const activeSessions = visitors.filter(v => v.status === "Active" && !blockedUserIds.has(v.institutionalId)).length;
 
     return [
@@ -107,7 +105,7 @@ export default function AdminDashboard() {
       { title: "Blocked", value: totalBlocked, icon: Ban },
       { title: "Active Sessions", value: activeSessions, icon: UserCheck },
     ];
-  }, [visitors, blockedUsers, blockedUserIds]);
+  }, [visitors, dbBlockedUsers, blockedUserIds, isClient]);
 
   const formatTime = (isoString: string) => {
     if (!isClient) return "--:--";
@@ -118,14 +116,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const filteredVisitors = useMemo(() => {
-    return visitors.filter(v => 
-      v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      v.institutionalId.toLowerCase().includes(searchTerm.toLowerCase())
-    ).slice(0, 10);
-  }, [visitors, searchTerm]);
-
-  const handleBlockUser = (visitor: any) => {
+  const handleBlockUser = async (visitor: any) => {
     if (!db) return;
     
     const blockData = {
@@ -149,152 +140,147 @@ export default function AdminDashboard() {
       });
   };
 
-  const handleUnblockUser = (user: any) => {
+  const handleUnblockUser = async (id: string, name: string) => {
     if (!db) return;
-    if (user.id && !user.id.toString().startsWith('b')) {
-      const docRef = doc(db, "blockList", user.id);
-      deleteDoc(docRef)
-        .then(() => {
-          toast({ title: "Access Restored", description: `${user.name} is no longer restricted.` });
-        })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: docRef.path,
-            operation: "delete",
-          } satisfies SecurityRuleContext);
-          errorEmitter.emit('permission-error', permissionError);
+    
+    try {
+      const q = query(collection(db, "blockList"), where("institutionalId", "==", id));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        querySnapshot.forEach((docSnap) => {
+          deleteDoc(doc(db, "blockList", docSnap.id));
         });
-    } else {
-      toast({ title: "Demo Restricted", description: "Use the Block List page to manage demo users." });
+        toast({ title: "Access Restored", description: `${name} is now active.` });
+      } else {
+        toast({ variant: "destructive", title: "Cannot Unblock", description: "Demo users must be imported to real database first." });
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
+  const filteredVisitors = useMemo(() => {
+    return visitors.filter(v => 
+      v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      v.institutionalId.toLowerCase().includes(searchTerm.toLowerCase())
+    ).slice(0, 8);
+  }, [visitors, searchTerm]);
+
   return (
-    <div className="min-h-screen bg-[#F4F7F5] font-body flex flex-col">
+    <div className="min-h-screen bg-[#F8F9FA] font-body flex flex-col">
       <SiteHeader />
       
-      <main className="flex-1 p-6 md:p-10 max-w-[1400px] mx-auto w-full space-y-8">
-        {/* Top Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <main className="flex-1 p-6 md:p-8 max-w-[1400px] mx-auto w-full space-y-6">
+        {/* Simple Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat) => (
-            <Card key={stat.title} className="border-none shadow-md rounded-xl bg-white overflow-hidden">
-              <CardContent className="p-6 flex flex-col items-center justify-center text-center">
-                <div className="flex items-center gap-3 mb-3">
-                  <stat.icon className="w-5 h-5 text-muted-foreground" />
-                  <p className="text-sm font-bold text-black uppercase tracking-tight">{stat.title}</p>
+            <Card key={stat.title} className="border-none shadow-sm rounded-none bg-white">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className="bg-primary/10 p-3 rounded-none">
+                  <stat.icon className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-5xl font-extrabold text-black">{stat.value}</h3>
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{stat.title}</p>
+                  <h3 className="text-3xl font-bold text-primary">{stat.value}</h3>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Left Section */}
-          <div className="lg:col-span-2 space-y-8">
-            <Card className="border-none shadow-md rounded-xl bg-white overflow-hidden">
-              <div className="px-6 py-5 flex items-center justify-between border-b bg-[#F8F9FA]/50">
-                <div className="flex items-center gap-4">
-                  <CardTitle className="text-lg font-bold">Visitor Activity Logs</CardTitle>
-                  <div className="relative w-64 hidden md:block">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Search users here" 
-                      className="pl-9 h-10 bg-white border-muted-foreground/20 rounded-md text-sm"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <Button variant="outline" className="text-primary border-primary hover:bg-primary/5 font-bold h-9 px-4 rounded-md text-xs uppercase tracking-wider">
-                  View Full Logs
-                </Button>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Activity Logs - Simple & Clear */}
+          <Card className="lg:col-span-2 border-none shadow-sm rounded-none bg-white">
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+              <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Visitor Activity Logs</CardTitle>
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Filter by name or ID..." 
+                  className="pl-9 h-9 text-xs border-muted-foreground/20 rounded-none bg-[#F8F9FA]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-              <div className="p-0">
-                <Table>
-                  <TableHeader className="bg-[#E9ECEF]">
-                    <TableRow>
-                      <TableHead className="font-bold text-black text-sm py-4">Time In</TableHead>
-                      <TableHead className="font-bold text-black text-sm">Name</TableHead>
-                      <TableHead className="font-bold text-black text-sm">Purpose</TableHead>
-                      <TableHead className="font-bold text-black text-sm">Status</TableHead>
-                      <TableHead className="font-bold text-black text-sm text-right pr-6">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredVisitors.map((visitor) => {
-                      const isBlocked = blockedUserIds.has(visitor.institutionalId);
-                      return (
-                        <TableRow key={visitor.id} className="border-b last:border-0 hover:bg-muted/30">
-                          <TableCell className="text-sm font-medium py-4">{formatTime(visitor.timeIn)}</TableCell>
-                          <TableCell className="text-sm font-medium">
-                            <div>{visitor.name}</div>
-                            <div className="text-[10px] text-muted-foreground uppercase">{visitor.institutionalId}</div>
-                          </TableCell>
-                          <TableCell className="text-sm font-medium">{visitor.purpose}</TableCell>
-                          <TableCell>
-                            <Badge className={cn(
-                              "border-none px-4 py-1 rounded-md font-bold text-[10px] uppercase tracking-wider",
-                              isBlocked ? "bg-[#FFCDD2] text-[#C62828]" : "bg-[#C8E6C9] text-[#2E7D32]"
-                            )}>
-                              {isBlocked ? "BLOCK" : "ACTIVE"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right pr-6">
-                            {!isBlocked && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreHorizontal className="w-4 h-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem 
-                                    onClick={() => handleBlockUser(visitor)}
-                                    className="text-destructive font-bold cursor-pointer"
-                                  >
-                                    <Ban className="w-4 h-4 mr-2" />
-                                    Block Student
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </Card>
-          </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-[#F8F9FA]">
+                  <TableRow>
+                    <TableHead className="text-[10px] font-bold uppercase py-4">Time</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase">Student</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase">Purpose</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase">Status</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase text-right pr-6">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredVisitors.map((visitor) => {
+                    const isBlocked = blockedUserIds.has(visitor.institutionalId);
+                    return (
+                      <TableRow key={visitor.id || visitor.institutionalId} className="hover:bg-muted/30">
+                        <TableCell className="text-xs font-medium py-4">{formatTime(visitor.timeIn)}</TableCell>
+                        <TableCell>
+                          <div className="font-bold text-sm text-primary">{visitor.name}</div>
+                          <div className="text-[10px] text-muted-foreground uppercase">{visitor.institutionalId}</div>
+                        </TableCell>
+                        <TableCell className="text-xs font-medium">{visitor.purpose}</TableCell>
+                        <TableCell>
+                          <Badge className={cn(
+                            "rounded-none px-3 py-0.5 font-bold text-[9px] uppercase tracking-widest border-none",
+                            isBlocked ? "bg-destructive text-white" : "bg-[#C8E6C9] text-[#2E7D32]"
+                          )}>
+                            {isBlocked ? "BLOCK" : "ACTIVE"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right pr-6">
+                          {!isBlocked && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="rounded-none">
+                                <DropdownMenuItem 
+                                  onClick={() => handleBlockUser(visitor)}
+                                  className="text-destructive font-bold cursor-pointer text-xs uppercase"
+                                >
+                                  Restrict Entry
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
-          {/* Right Section */}
-          <div className="space-y-8">
-            <Card className="border-none shadow-md rounded-xl bg-white overflow-hidden">
-              <CardHeader className="pb-4 border-b">
-                <CardTitle className="text-lg font-bold">Block List Management</CardTitle>
+          {/* Block List Management Card */}
+          <div className="space-y-6">
+            <Card className="border-none shadow-sm rounded-none bg-white">
+              <CardHeader className="border-b pb-4">
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Block List Management</CardTitle>
               </CardHeader>
-              <div className="p-0">
+              <CardContent className="p-0">
                 <Table>
-                  <TableHeader className="bg-[#E9ECEF]">
-                    <TableRow>
-                      <TableHead className="font-bold text-black text-sm py-3">Name</TableHead>
-                      <TableHead className="font-bold text-black text-sm text-right pr-6">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
                   <TableBody>
-                    {blockedUsers.slice(0, 7).map((user) => (
-                      <TableRow key={user.id} className="border-b last:border-0 hover:bg-muted/30">
-                        <TableCell className="text-sm font-medium py-4 pl-6">
-                          <div>{user.name}</div>
+                    {blockedUsers.slice(0, 6).map((user) => (
+                      <TableRow key={user.id || user.institutionalId} className="hover:bg-muted/30">
+                        <TableCell className="py-4 pl-6">
+                          <div className="font-bold text-sm">{user.name}</div>
                           <div className="text-[10px] text-muted-foreground">{user.institutionalId}</div>
                         </TableCell>
                         <TableCell className="text-right pr-6">
                           <Button 
                             variant="link" 
-                            className="text-[#C62828] font-bold text-[10px] uppercase p-0 h-auto"
-                            onClick={() => handleUnblockUser(user)}
+                            className="text-destructive font-bold text-[10px] uppercase p-0 h-auto tracking-widest"
+                            onClick={() => handleUnblockUser(user.institutionalId, user.name)}
                           >
                             Unblock
                           </Button>
@@ -310,17 +296,22 @@ export default function AdminDashboard() {
                     )}
                   </TableBody>
                 </Table>
-              </div>
+                <div className="p-4 border-t">
+                  <Button variant="outline" className="w-full text-[10px] font-bold uppercase tracking-widest h-10 rounded-none border-primary text-primary hover:bg-primary/5">
+                    View Full Block List
+                  </Button>
+                </div>
+              </CardContent>
             </Card>
 
-            <Card className="border-none shadow-md rounded-xl bg-white p-6 space-y-4">
-              <div className="flex items-center gap-3 text-destructive">
-                <AlertCircle className="w-6 h-6" />
-                <h4 className="font-bold text-lg">System Notice</h4>
+            <Card className="border-none shadow-sm rounded-none bg-primary text-white p-6 relative overflow-hidden">
+              <ShieldAlert className="absolute -right-4 -bottom-4 w-24 h-24 opacity-10" />
+              <div className="relative z-10 space-y-3">
+                <h4 className="font-bold text-xs uppercase tracking-widest">Security Protocol</h4>
+                <p className="text-sm leading-relaxed text-white/80">
+                  Blocking a student ID denies all entry privileges instantly. Verify credentials before restricting access.
+                </p>
               </div>
-              <p className="text-sm text-black leading-relaxed">
-                Blocking a student ID will instantly deny them access across all library terminals. Please verify records before restriction.
-              </p>
             </Card>
           </div>
         </div>

@@ -41,8 +41,7 @@ const PURPOSES = [
   "Reading books",
   "Research in thesis",
   "Use of computer",
-  "Doing assignments",
-  "Other"
+  "Doing assignments"
 ];
 
 const COLLEGES = [
@@ -68,7 +67,7 @@ export function VisitorSignInForm() {
     defaultValues: {
       idNumber: "",
       fullName: "",
-      purpose: "",
+      purpose: "Reading books",
       college: "College of Computing",
     },
   });
@@ -78,6 +77,7 @@ export function VisitorSignInForm() {
     setIsLoading(true);
 
     try {
+      // Security Check: Is student blocked?
       const blockQuery = query(collection(db, "blockList"), where("institutionalId", "==", values.idNumber));
       const blockSnap = await getDocs(blockQuery);
 
@@ -120,9 +120,9 @@ export function VisitorSignInForm() {
           <ShieldAlert className="w-12 h-12 text-destructive" />
           <div className="space-y-2">
             <h4 className="text-xl font-bold">Entry Restricted</h4>
-            <p className="text-white/80 text-sm">Your ID is restricted. Please proceed to the Main Circulation Desk for assistance.</p>
+            <p className="text-white/80 text-sm">Access denied. Please proceed to the Main Circulation Desk for assistance.</p>
           </div>
-          <Button onClick={() => { setIsBlocked(false); form.reset(); }} variant="outline" className="text-primary border-white bg-white hover:bg-white/90 rounded-full px-8">
+          <Button onClick={() => { setIsBlocked(false); form.reset(); }} variant="outline" className="text-primary border-white bg-white hover:bg-white/90 rounded-none px-8 font-bold">
             Try another ID
           </Button>
         </CardContent>
@@ -137,9 +137,9 @@ export function VisitorSignInForm() {
           <CheckCircle2 className="w-12 h-12 text-accent" />
           <div className="space-y-2">
             <h4 className="text-xl font-bold">Sign-in Complete!</h4>
-            <p className="text-white/80 text-sm">Your entry has been recorded. Enjoy your study session.</p>
+            <p className="text-white/80 text-sm">Welcome to NEU Library. Enjoy your study session.</p>
           </div>
-          <Button onClick={() => { setSubmitted(false); form.reset(); }} variant="outline" className="text-primary border-white bg-white hover:bg-white/90 rounded-full px-8">
+          <Button onClick={() => { setSubmitted(false); form.reset(); }} variant="outline" className="text-primary border-white bg-white hover:bg-white/90 rounded-none px-8 font-bold">
             Done
           </Button>
         </CardContent>
@@ -150,11 +150,11 @@ export function VisitorSignInForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-        <div className="flex rounded-lg overflow-hidden border border-white/20 p-1 bg-[#4A6D5D]">
+        <div className="flex rounded-none overflow-hidden border border-white/20 p-1 bg-[#4A6D5D]">
           <button
             type="button"
             className={cn(
-              "flex-1 py-2 text-xs font-bold transition-all rounded-md uppercase tracking-wider",
+              "flex-1 py-2 text-xs font-bold transition-all rounded-none uppercase tracking-wider",
               loginMethod === "tap" ? "bg-[#3D5C4E] text-white shadow-sm" : "text-white/60 hover:text-white"
             )}
             onClick={() => setLoginMethod("tap")}
@@ -164,7 +164,7 @@ export function VisitorSignInForm() {
           <button
             type="button"
             className={cn(
-              "flex-1 py-2 text-xs font-bold transition-all rounded-md uppercase tracking-wider",
+              "flex-1 py-2 text-xs font-bold transition-all rounded-none uppercase tracking-wider",
               loginMethod === "email" ? "bg-[#3D5C4E] text-white shadow-sm" : "text-white/60 hover:text-white"
             )}
             onClick={() => setLoginMethod("email")}
@@ -185,7 +185,7 @@ export function VisitorSignInForm() {
                 <FormControl>
                   <Input 
                     placeholder={loginMethod === "tap" ? "2021-1234" : "user@neu.edu.ph"}
-                    className="bg-[#E8EEEB] text-primary border-none focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-white h-10 font-medium" 
+                    className="bg-[#E8EEEB] text-primary border-none focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-white h-10 font-medium rounded-none" 
                     {...field} 
                   />
                 </FormControl>
@@ -203,7 +203,7 @@ export function VisitorSignInForm() {
                 <FormControl>
                   <Input 
                     placeholder="Enter your full name"
-                    className="bg-[#E8EEEB] text-primary border-none focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-white h-10 font-medium" 
+                    className="bg-[#E8EEEB] text-primary border-none focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-white h-10 font-medium rounded-none" 
                     {...field} 
                   />
                 </FormControl>
@@ -221,11 +221,11 @@ export function VisitorSignInForm() {
                   <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/70">College / Office</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="bg-[#E8EEEB] text-primary border-none focus:ring-offset-0 focus:ring-2 focus:ring-white h-10 font-medium">
+                      <SelectTrigger className="bg-[#E8EEEB] text-primary border-none focus:ring-offset-0 focus:ring-2 focus:ring-white h-10 font-medium rounded-none">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="rounded-none">
                       {COLLEGES.map((c) => (
                         <SelectItem key={c} value={c}>{c}</SelectItem>
                       ))}
@@ -244,11 +244,11 @@ export function VisitorSignInForm() {
                   <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/70">Purpose</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="bg-[#E8EEEB] text-primary border-none focus:ring-offset-0 focus:ring-2 focus:ring-white h-10 font-medium">
+                      <SelectTrigger className="bg-[#E8EEEB] text-primary border-none focus:ring-offset-0 focus:ring-2 focus:ring-white h-10 font-medium rounded-none">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="rounded-none">
                       {PURPOSES.map((p) => (
                         <SelectItem key={p} value={p}>{p}</SelectItem>
                       ))}
@@ -263,7 +263,7 @@ export function VisitorSignInForm() {
 
         <Button 
           type="submit" 
-          className="w-full bg-[#3D5C4E] hover:bg-[#324B40] text-white font-bold h-12 rounded-lg uppercase tracking-widest text-xs mt-4 shadow-lg transition-transform active:scale-[0.98]" 
+          className="w-full bg-[#3D5C4E] hover:bg-[#324B40] text-white font-bold h-12 rounded-none uppercase tracking-widest text-xs mt-4 shadow-lg transition-transform active:scale-[0.98]" 
           disabled={isLoading}
         >
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "SIGN IN ENTRY"}
