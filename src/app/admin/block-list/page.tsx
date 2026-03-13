@@ -58,6 +58,7 @@ export default function BlockListManagement() {
 
   const blockedUsers = useMemo(() => {
     const firestoreData = dbBlockedUsers || [];
+    // Only show mock data if not already in Firestore and not explicitly removed in this session
     const mockData = MOCK_BLOCKED.filter(m => 
       !firestoreData.find(f => f.institutionalId === m.institutionalId) && 
       !removedIds.has(m.id)
@@ -89,7 +90,7 @@ export default function BlockListManagement() {
         setNewBlock({ name: "", institutionalId: "", reason: "" });
         setOpen(false);
         setIsAdding(false);
-        toast({ title: "User Blocked", description: `${newBlock.name} has been restricted.` });
+        toast({ title: "User Restricted", description: `${newBlock.name} access has been blocked.` });
       })
       .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -105,7 +106,10 @@ export default function BlockListManagement() {
   const handleRemoveBlock = (user: any) => {
     if (!db) return;
     
-    if (user.id && !user.id.startsWith('b')) {
+    // Check if it's a real Firestore document ID (not a mock ID starting with 'b')
+    const isRealDoc = user.id && !user.id.toString().startsWith('b');
+    
+    if (isRealDoc) {
       const docRef = doc(db, "blockList", user.id);
       deleteDoc(docRef)
         .then(() => {
@@ -119,6 +123,7 @@ export default function BlockListManagement() {
           errorEmitter.emit('permission-error', permissionError);
         });
     } else {
+      // For mock data, we just track the removal in state for this session
       setRemovedIds(prev => new Set([...prev, user.id]));
       toast({ title: "Access Restored", description: `${user.name} is no longer restricted.` });
     }
@@ -237,7 +242,7 @@ export default function BlockListManagement() {
                             onClick={() => handleRemoveBlock(user)}
                           >
                             <UserCheck className="w-3.5 h-3.5" />
-                            Restore Access
+                            Unrestrict Access
                           </Button>
                         </TableCell>
                       </TableRow>

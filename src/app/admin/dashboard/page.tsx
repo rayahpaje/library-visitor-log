@@ -41,6 +41,7 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
 import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { isToday, startOfWeek, isAfter } from "date-fns";
 
 export default function AdminDashboard() {
   const db = useFirestore();
@@ -82,12 +83,20 @@ export default function AdminDashboard() {
   }, [dbBlockedUsers]);
 
   const stats = useMemo(() => {
-    const activeCount = visitors.filter(v => !blockedUserIds.has(v.institutionalId)).length;
+    const today = new Date();
+    const weekStart = startOfWeek(today);
+
+    const todayCount = visitors.filter(v => isToday(new Date(v.timeIn))).length;
+    const weekCount = visitors.filter(v => isAfter(new Date(v.timeIn), weekStart)).length;
+    const activeSessions = visitors.filter(v => 
+      v.status === "Active" && !blockedUserIds.has(v.institutionalId)
+    ).length;
+
     return [
-      { title: "Today's Visitors", value: visitors.length.toString(), icon: Users },
-      { title: "This Week", value: (visitors.length * 4.5).toFixed(0), icon: TrendingUp },
+      { title: "Today's Visitors", value: todayCount.toString(), icon: Users },
+      { title: "This Week", value: weekCount.toString(), icon: TrendingUp },
       { title: "Blocked", value: blockedUsers.length.toString(), icon: Ban },
-      { title: "Active Sessions", value: activeCount.toString(), icon: UserCheck },
+      { title: "Active Sessions", value: activeSessions.toString(), icon: UserCheck },
     ];
   }, [visitors, blockedUsers, blockedUserIds]);
 
@@ -110,7 +119,7 @@ export default function AdminDashboard() {
 
     addDoc(collection(db, "blockList"), blockData)
       .then(() => {
-        toast({ title: "User Blocked", description: `${visitor.name} has been restricted.` });
+        toast({ title: "User Restricted", description: `${visitor.name} access has been blocked.` });
       })
       .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -258,7 +267,7 @@ export default function AdminDashboard() {
                                 <DropdownMenuContent align="end" className="rounded-none border-none shadow-xl">
                                   <DropdownMenuItem onClick={() => handleBlockUser(visitor)} className="text-destructive font-bold uppercase text-[10px] tracking-widest cursor-pointer">
                                     <Ban className="w-3.5 h-3.5 mr-2" />
-                                    Block Access
+                                    Restrict Access
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
