@@ -9,7 +9,9 @@ import {
   Ban, 
   UserCheck, 
   Search, 
-  FileText,
+  MoreHorizontal,
+  UserX,
+  Loader2,
   AlertCircle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -23,13 +25,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, limit } from "firebase/firestore";
+import { collection, query, orderBy, limit, addDoc, doc, deleteDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { isToday, startOfWeek, isAfter, parseISO } from "date-fns";
 import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
+import { toast } from "@/hooks/use-toast";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError, type SecurityRuleContext } from "@/firebase/errors";
 
 export default function AdminDashboard() {
   const db = useFirestore();
@@ -113,8 +122,52 @@ export default function AdminDashboard() {
     return visitors.filter(v => 
       v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       v.institutionalId.toLowerCase().includes(searchTerm.toLowerCase())
-    ).slice(0, 8);
+    ).slice(0, 10);
   }, [visitors, searchTerm]);
+
+  const handleBlockUser = (visitor: any) => {
+    if (!db) return;
+    
+    const blockData = {
+      name: visitor.name,
+      institutionalId: visitor.institutionalId,
+      reason: "Administrative Restriction",
+      dateBlocked: new Date().toISOString().split('T')[0]
+    };
+
+    addDoc(collection(db, "blockList"), blockData)
+      .then(() => {
+        toast({ title: "User Blocked", description: `${visitor.name} has been restricted.` });
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: "blockList",
+          operation: "create",
+          requestResourceData: blockData,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
+  };
+
+  const handleUnblockUser = (user: any) => {
+    if (!db) return;
+    if (user.id && !user.id.toString().startsWith('b')) {
+      const docRef = doc(db, "blockList", user.id);
+      deleteDoc(docRef)
+        .then(() => {
+          toast({ title: "Access Restored", description: `${user.name} is no longer restricted.` });
+        })
+        .catch(async (serverError) => {
+          const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: "delete",
+          } satisfies SecurityRuleContext);
+          errorEmitter.emit('permission-error', permissionError);
+        });
+    } else {
+      toast({ title: "Demo Restricted", description: "Use the Block List page to manage demo users." });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#F4F7F5] font-body flex flex-col">
@@ -140,31 +193,10 @@ export default function AdminDashboard() {
           {/* Main Left Section */}
           <div className="lg:col-span-2 space-y-8">
             <Card className="border-none shadow-md rounded-xl bg-white overflow-hidden">
-              <CardHeader className="pb-4 border-b">
-                <CardTitle className="text-lg font-bold">Visitor Statistics & Reporting</CardTitle>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Time Period Selector</p>
-                    <RadioGroup defaultValue="day" className="flex items-center gap-4">
-                      {["Day", "Week", "Month", "Custom"].map((period) => (
-                        <div key={period} className="flex items-center space-x-2">
-                          <RadioGroupItem value={period.toLowerCase()} id={period.toLowerCase()} />
-                          <Label htmlFor={period.toLowerCase()} className="text-sm font-medium">{period}</Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                  <Button className="bg-[#004D40] hover:bg-[#003d33] text-white font-bold h-11 px-6 rounded-lg gap-2 shadow-sm">
-                    <FileText className="w-4 h-4" />
-                    Generate PDF Report
-                  </Button>
-                </div>
-              </CardHeader>
-              
-              <div className="p-0">
-                <div className="px-6 py-4 flex items-center justify-between border-b bg-[#F8F9FA]/50">
+              <div className="px-6 py-5 flex items-center justify-between border-b bg-[#F8F9FA]/50">
+                <div className="flex items-center gap-4">
                   <CardTitle className="text-lg font-bold">Visitor Activity Logs</CardTitle>
-                  <div className="relative w-64">
+                  <div className="relative w-64 hidden md:block">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input 
                       placeholder="Search users here" 
@@ -174,30 +206,63 @@ export default function AdminDashboard() {
                     />
                   </div>
                 </div>
+                <Button variant="outline" className="text-primary border-primary hover:bg-primary/5 font-bold h-9 px-4 rounded-md text-xs uppercase tracking-wider">
+                  View Full Logs
+                </Button>
+              </div>
+              <div className="p-0">
                 <Table>
                   <TableHeader className="bg-[#E9ECEF]">
                     <TableRow>
                       <TableHead className="font-bold text-black text-sm py-4">Time In</TableHead>
                       <TableHead className="font-bold text-black text-sm">Name</TableHead>
-                      <TableHead className="font-bold text-black text-sm">College/ Office</TableHead>
                       <TableHead className="font-bold text-black text-sm">Purpose</TableHead>
                       <TableHead className="font-bold text-black text-sm">Status</TableHead>
+                      <TableHead className="font-bold text-black text-sm text-right pr-6">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredVisitors.map((visitor) => (
-                      <TableRow key={visitor.id} className="border-b last:border-0 hover:bg-muted/30">
-                        <TableCell className="text-sm font-medium py-4">{formatTime(visitor.timeIn)}</TableCell>
-                        <TableCell className="text-sm font-medium">{visitor.name}</TableCell>
-                        <TableCell className="text-sm font-medium">{visitor.college}</TableCell>
-                        <TableCell className="text-sm font-medium">{visitor.purpose}</TableCell>
-                        <TableCell>
-                          <Badge className="bg-[#C8E6C9] text-[#2E7D32] border-none px-4 py-1 rounded-md font-bold text-[10px] uppercase tracking-wider">
-                            ACTIVE
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredVisitors.map((visitor) => {
+                      const isBlocked = blockedUserIds.has(visitor.institutionalId);
+                      return (
+                        <TableRow key={visitor.id} className="border-b last:border-0 hover:bg-muted/30">
+                          <TableCell className="text-sm font-medium py-4">{formatTime(visitor.timeIn)}</TableCell>
+                          <TableCell className="text-sm font-medium">
+                            <div>{visitor.name}</div>
+                            <div className="text-[10px] text-muted-foreground uppercase">{visitor.institutionalId}</div>
+                          </TableCell>
+                          <TableCell className="text-sm font-medium">{visitor.purpose}</TableCell>
+                          <TableCell>
+                            <Badge className={cn(
+                              "border-none px-4 py-1 rounded-md font-bold text-[10px] uppercase tracking-wider",
+                              isBlocked ? "bg-[#FFCDD2] text-[#C62828]" : "bg-[#C8E6C9] text-[#2E7D32]"
+                            )}>
+                              {isBlocked ? "BLOCK" : "ACTIVE"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right pr-6">
+                            {!isBlocked && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem 
+                                    onClick={() => handleBlockUser(visitor)}
+                                    className="text-destructive font-bold cursor-pointer"
+                                  >
+                                    <Ban className="w-4 h-4 mr-2" />
+                                    Block Student
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -215,20 +280,34 @@ export default function AdminDashboard() {
                   <TableHeader className="bg-[#E9ECEF]">
                     <TableRow>
                       <TableHead className="font-bold text-black text-sm py-3">Name</TableHead>
-                      <TableHead className="font-bold text-black text-sm text-right pr-6">Status</TableHead>
+                      <TableHead className="font-bold text-black text-sm text-right pr-6">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {blockedUsers.slice(0, 7).map((user) => (
                       <TableRow key={user.id} className="border-b last:border-0 hover:bg-muted/30">
-                        <TableCell className="text-sm font-medium py-4 pl-6">{user.name}</TableCell>
+                        <TableCell className="text-sm font-medium py-4 pl-6">
+                          <div>{user.name}</div>
+                          <div className="text-[10px] text-muted-foreground">{user.institutionalId}</div>
+                        </TableCell>
                         <TableCell className="text-right pr-6">
-                          <Badge className="bg-[#FFCDD2] text-[#C62828] border-none px-4 py-1 rounded-md font-bold text-[10px] uppercase tracking-wider">
-                            BLOCKED
-                          </Badge>
+                          <Button 
+                            variant="link" 
+                            className="text-[#C62828] font-bold text-[10px] uppercase p-0 h-auto"
+                            onClick={() => handleUnblockUser(user)}
+                          >
+                            Unblock
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
+                    {blockedUsers.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={2} className="text-center py-8 text-muted-foreground text-xs italic">
+                          No blocked students found.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -237,11 +316,10 @@ export default function AdminDashboard() {
             <Card className="border-none shadow-md rounded-xl bg-white p-6 space-y-4">
               <div className="flex items-center gap-3 text-destructive">
                 <AlertCircle className="w-6 h-6" />
-                <h4 className="font-bold text-lg">Blocked Entry?</h4>
+                <h4 className="font-bold text-lg">System Notice</h4>
               </div>
               <p className="text-sm text-black leading-relaxed">
-                Your ID may be blocked due to pending penalties, unreturned items, or behavior violations. 
-                Please proceed to the Main Circulation Desk for assistance.
+                Blocking a student ID will instantly deny them access across all library terminals. Please verify records before restriction.
               </p>
             </Card>
           </div>

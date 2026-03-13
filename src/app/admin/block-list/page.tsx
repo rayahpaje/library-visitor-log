@@ -57,7 +57,6 @@ export default function BlockListManagement() {
 
   const blockedUsers = useMemo(() => {
     const firestoreData = dbBlockedUsers || [];
-    // Only show mock data if not already in Firestore and not explicitly removed in this session
     const mockData = MOCK_BLOCKED.filter(m => 
       !firestoreData.find(f => f.institutionalId === m.institutionalId) && 
       !removedIds.has(m.id)
@@ -105,7 +104,6 @@ export default function BlockListManagement() {
   const handleRemoveBlock = (user: any) => {
     if (!db) return;
     
-    // Check if it's a real Firestore document ID
     const isRealDoc = user.id && !user.id.toString().startsWith('b');
     
     if (isRealDoc) {
@@ -122,7 +120,6 @@ export default function BlockListManagement() {
           errorEmitter.emit('permission-error', permissionError);
         });
     } else {
-      // For mock data, we track the removal in state for this session
       setRemovedIds(prev => new Set([...prev, user.id]));
       toast({ title: "Access Restored", description: `${user.name} is no longer restricted.` });
     }
@@ -143,12 +140,12 @@ export default function BlockListManagement() {
           
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-destructive hover:bg-destructive/90 text-white gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs shadow-lg rounded-none border-b-4 border-[#B00000]">
+              <Button className="bg-destructive hover:bg-destructive/90 text-white gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs shadow-lg rounded-none">
                 <Plus className="w-4 h-4" />
                 Manually Block Access
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] rounded-none border-none shadow-2xl">
+            <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-primary font-bold">
                   <ShieldAlert className="w-5 h-5 text-destructive" />
@@ -161,7 +158,6 @@ export default function BlockListManagement() {
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Full Name</Label>
                   <Input 
                     placeholder="John Doe" 
-                    className="bg-[#F4F7F5] border-none font-medium h-10 rounded-none"
                     value={newBlock.name}
                     onChange={(e) => setNewBlock({...newBlock, name: e.target.value})}
                   />
@@ -170,7 +166,6 @@ export default function BlockListManagement() {
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Student ID</Label>
                   <Input 
                     placeholder="2021-XXXX" 
-                    className="bg-[#F4F7F5] border-none font-medium h-10 rounded-none"
                     value={newBlock.institutionalId}
                     onChange={(e) => setNewBlock({...newBlock, institutionalId: e.target.value})}
                   />
@@ -179,15 +174,14 @@ export default function BlockListManagement() {
                   <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Reason</Label>
                   <Textarea 
                     placeholder="Detail the concern..." 
-                    className="bg-[#F4F7F5] border-none font-medium min-h-[100px] rounded-none"
                     value={newBlock.reason}
                     onChange={(e) => setNewBlock({...newBlock, reason: e.target.value})}
                   />
                 </div>
               </div>
               <DialogFooter className="gap-2">
-                <Button variant="outline" className="rounded-none font-bold uppercase text-xs" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button variant="destructive" className="rounded-none font-bold uppercase text-xs shadow-md" onClick={handleAddBlock} disabled={isAdding}>
+                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleAddBlock} disabled={isAdding}>
                   {isAdding ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Confirm Block"}
                 </Button>
               </DialogFooter>
@@ -244,6 +238,13 @@ export default function BlockListManagement() {
                         </TableCell>
                       </TableRow>
                     ))}
+                    {filteredBlockedUsers.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-12 text-muted-foreground text-sm italic">
+                          No restricted students found matching your search.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               )}
@@ -259,7 +260,7 @@ export default function BlockListManagement() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-4 bg-white/10 border-l-2 border-white/30 text-xs font-medium">
-                  <strong>Validation:</strong> The system verifies every student ID against this database in real-time.
+                  <strong>Validation:</strong> The system verifies every student ID against this database in real-time during sign-in.
                 </div>
               </CardContent>
             </Card>
