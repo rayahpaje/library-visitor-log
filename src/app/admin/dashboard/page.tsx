@@ -51,7 +51,7 @@ export default function AdminDashboard() {
   // Queries
   const visitorsQuery = useMemo(() => {
     if (!db) return null;
-    return query(collection(db, "visitors"), orderBy("timeIn", "desc"), limit(20));
+    return query(collection(db, "visitors"), orderBy("timeIn", "desc"), limit(100));
   }, [db]);
 
   const blockListQuery = useMemo(() => {
@@ -62,19 +62,22 @@ export default function AdminDashboard() {
   const { data: dbVisitors, loading: visitorsLoading } = useCollection(visitorsQuery);
   const { data: dbBlockedUsers, loading: blocksLoading } = useCollection(blockListQuery);
 
-  // Fallback to mock data if Firestore is empty/loading
+  // Merge Firestore data with Mock data for demonstration
   const visitors = useMemo(() => {
-    if (dbVisitors && dbVisitors.length > 0) return dbVisitors;
-    return MOCK_VISITORS;
+    const firestoreData = dbVisitors || [];
+    // Filter out mock visitors that match real Firestore visitors by ID
+    const uniqueMocks = MOCK_VISITORS.filter(m => !firestoreData.some(f => f.institutionalId === m.institutionalId));
+    return [...firestoreData, ...uniqueMocks];
   }, [dbVisitors]);
 
   const blockedUsers = useMemo(() => {
-    if (dbBlockedUsers && dbBlockedUsers.length > 0) return dbBlockedUsers;
-    return MOCK_BLOCKED;
+    const firestoreData = dbBlockedUsers || [];
+    const uniqueMocks = MOCK_BLOCKED.filter(m => !firestoreData.some(f => f.institutionalId === m.institutionalId));
+    return [...firestoreData, ...uniqueMocks];
   }, [dbBlockedUsers]);
 
   const stats = useMemo(() => {
-    const activeCount = (visitors as any[]).filter(v => v.status === "Active").length;
+    const activeCount = visitors.filter(v => v.status === "Active").length;
     return [
       { title: "Today's Visitors", value: visitors.length.toString(), icon: Users },
       { title: "This Week", value: (visitors.length * 4.5).toFixed(0), icon: TrendingUp },
@@ -84,7 +87,7 @@ export default function AdminDashboard() {
   }, [visitors, blockedUsers]);
 
   const filteredVisitors = useMemo(() => {
-    return (visitors as any[]).filter(v => 
+    return visitors.filter(v => 
       v.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
       v.institutionalId?.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -93,6 +96,13 @@ export default function AdminDashboard() {
   const handleBlockUser = (visitor: any) => {
     if (!db) return;
     
+    // Check if already blocked in Firestore
+    const isAlreadyBlocked = dbBlockedUsers?.some(b => b.institutionalId === visitor.institutionalId);
+    if (isAlreadyBlocked) {
+      toast({ title: "Already Restricted", description: `${visitor.name} is already in the database.` });
+      return;
+    }
+
     const blockData = {
       name: visitor.name,
       institutionalId: visitor.institutionalId,
@@ -102,7 +112,7 @@ export default function AdminDashboard() {
 
     addDoc(collection(db, "blockList"), blockData)
       .then(() => {
-        toast({ title: "User Blocked", description: `${visitor.name} has been restricted.` });
+        toast({ title: "User Restricted", description: `${visitor.name} has been added to security database.` });
       })
       .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -132,18 +142,8 @@ export default function AdminDashboard() {
         });
       });
 
-      MOCK_BLOCKED.forEach((b) => {
-        const ref = doc(collection(db, "blockList"));
-        batch.set(ref, {
-          name: b.name,
-          institutionalId: b.institutionalId,
-          reason: b.reason,
-          dateBlocked: b.dateBlocked
-        });
-      });
-
       await batch.commit();
-      toast({ title: "System Initialized", description: "Student database imported successfully." });
+      toast({ title: "System Initialized", description: "All student records imported." });
     } catch (e) {
       console.error(e);
       toast({ variant: "destructive", title: "Error", description: "Failed to initialize records." });
@@ -163,14 +163,15 @@ export default function AdminDashboard() {
             <p className="text-muted-foreground text-sm">Real-time monitoring of campus library usage.</p>
           </div>
           
-          {(!dbVisitors || dbVisitors.length === 0) && (
+          {(!dbVisitors || dbVisitors.length < 5) && (
             <Button 
               onClick={seedDatabase} 
               disabled={isSeeding}
-              className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs rounded-none shadow-lg border-b-4 border-[#E6B800]"
+              variant="outline"
+              className="border-accent text-accent-foreground hover:bg-accent/10 gap-2 h-11 px-6 font-bold uppercase tracking-wider text-xs rounded-none shadow-sm"
             >
               {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-              Initialize Student Database
+              Import Students
             </Button>
           )}
         </div>
@@ -236,7 +237,7 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredVisitors.map((visitor: any) => (
+                    {filteredVisitors.slice(0, 20).map((visitor: any) => (
                       <TableRow key={visitor.id || visitor.name} className="hover:bg-gray-50 text-center group border-b last:border-0">
                         <TableCell className="text-xs font-medium py-4">
                           {visitor.timeIn ? new Date(visitor.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase() : "N/A"}
@@ -301,13 +302,13 @@ export default function AdminDashboard() {
                     ))}
                   </TableBody>
                 </Table>
-                {blockedUsers.length > 0 && (
-                  <div className="p-4 border-t bg-gray-50 text-center">
-                    <Button variant="link" className="text-[10px] font-bold uppercase tracking-widest text-primary hover:no-underline">
-                      View All Security Alerts <ArrowRight className="w-3 h-3 ml-2" />
-                    </Button>
-                  </div>
-                )}
+                <div className="p-4 border-t bg-gray-50 text-center">
+                  <Button variant="link" asChild className="text-[10px] font-bold uppercase tracking-widest text-primary hover:no-underline">
+                    <a href="/admin/block-list">
+                      Manage Security Database <ArrowRight className="w-3 h-3 ml-2" />
+                    </a>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 

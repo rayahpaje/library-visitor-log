@@ -57,8 +57,10 @@ export default function BlockListManagement() {
   const { data: dbBlockedUsers, loading } = useCollection(blockListQuery);
 
   const blockedUsers = useMemo(() => {
-    if (dbBlockedUsers && dbBlockedUsers.length > 0) return dbBlockedUsers;
-    return MOCK_BLOCKED;
+    const firestoreData = dbBlockedUsers || [];
+    // Only show mock users if they aren't overridden by a real Firestore block
+    const uniqueMocks = MOCK_BLOCKED.filter(m => !firestoreData.some(f => f.institutionalId === m.institutionalId));
+    return [...firestoreData, ...uniqueMocks];
   }, [dbBlockedUsers]);
 
   const filteredBlockedUsers = useMemo(() => {
@@ -85,7 +87,7 @@ export default function BlockListManagement() {
         setNewBlock({ name: "", institutionalId: "", reason: "" });
         setOpen(false);
         setIsAdding(false);
-        toast({ title: "Individual Blocked", description: `${newBlock.name} has been restricted.` });
+        toast({ title: "Individual Restricted", description: `${newBlock.name} has been restricted.` });
       })
       .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -98,27 +100,31 @@ export default function BlockListManagement() {
       });
   };
 
-  const handleRemoveBlock = (id: string, name: string) => {
-    if (!db || !id) return;
+  const handleRemoveBlock = (user: any) => {
+    if (!db) return;
     
-    // Check if it's a mock record (mock records usually don't have Firestore-style IDs)
-    if (id.startsWith('b') && id.length < 5) {
-      toast({ title: "Demo Record", description: "This is a hardcoded demonstration record and cannot be deleted from the database. Please initialize the system to use real records." });
-      return;
-    }
-
-    const docRef = doc(db, "blockList", id);
-    deleteDoc(docRef)
-      .then(() => {
-        toast({ title: "Access Restored", description: `${name} can now access the library.` });
-      })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: "delete",
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
+    // Check if it's a Firestore record
+    if (user.id && !user.id.startsWith('b')) {
+      const docRef = doc(db, "blockList", user.id);
+      deleteDoc(docRef)
+        .then(() => {
+          toast({ title: "Access Restored", description: `${user.name} can now access the library.` });
+        })
+        .catch(async (serverError) => {
+          const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: "delete",
+          } satisfies SecurityRuleContext);
+          errorEmitter.emit('permission-error', permissionError);
+        });
+    } else {
+      // It's a mock record, so just show a message. 
+      // In a real app, mock records wouldn't be unblockable this way unless they were first 'added' to Firestore
+      toast({ 
+        title: "Demo Mode", 
+        description: "This is a hardcoded demonstration record. To fully test unblocking, first block a student from the logs." 
       });
+    }
   };
 
   return (
@@ -241,10 +247,10 @@ export default function BlockListManagement() {
                             variant="outline" 
                             size="sm" 
                             className="text-primary hover:bg-primary/10 gap-2 border-primary h-8 px-4 font-bold text-[10px] uppercase rounded-none"
-                            onClick={() => handleRemoveBlock(user.id, user.name)}
+                            onClick={() => handleRemoveBlock(user)}
                           >
                             <UserCheck className="w-3.5 h-3.5" />
-                            Unblock Access
+                            Restore Access
                           </Button>
                         </TableCell>
                       </TableRow>
