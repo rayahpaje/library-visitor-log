@@ -12,7 +12,9 @@ import {
   BadgeCheck,
   CalendarDays,
   User as UserIcon,
-  ShieldCheck
+  ShieldCheck,
+  Filter,
+  ArrowRight
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,17 +26,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { 
   collection, 
   addDoc, 
-  deleteDoc, 
-  doc, 
-  query, 
-  where, 
-  getDocs
 } from "firebase/firestore";
-import { format, parseISO, startOfWeek } from "date-fns";
+import { format, parseISO, startOfWeek, isWithinInterval, startOfDay, endOfDay, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
 import { toast } from "@/hooks/use-toast";
@@ -43,12 +47,36 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 
+const COLLEGES = [
+  "College of Informatics and Computing Science", 
+  "College of Arts", 
+  "College of Science", 
+  "College of Engineering", 
+  "College of Business", 
+  "College of Nursing", 
+  "Staff/Faculty", 
+  "External Visitor"
+];
+
+const PURPOSES = [
+  "Reading books",
+  "Research in thesis",
+  "Use of computer",
+  "Doing assignments"
+];
+
 export default function AdminDashboard() {
   const db = useFirestore();
   const { user, isUserLoading } = useUser();
   const [searchTerm, setSearchTerm] = useState("");
   const [isMounted, setIsMounted] = useState(false);
   const [sessionUnblockedIds, setSessionUnblockedIds] = useState<string[]>([]);
+  
+  // Advanced Filters
+  const [dateRange, setDateRange] = useState<"today" | "week" | "month" | "all">("all");
+  const [filterCollege, setFilterCollege] = useState<string>("all");
+  const [filterPurpose, setFilterPurpose] = useState<string>("all");
+  const [filterRole, setFilterRole] = useState<"all" | "staff" | "student">("all");
 
   useEffect(() => {
     setIsMounted(true);
@@ -74,29 +102,48 @@ export default function AdminDashboard() {
     return [...firestoreData, ...mockData].filter(u => !sessionUnblockedIds.includes(u.institutionalId));
   }, [dbBlocked, sessionUnblockedIds]);
 
+  const filteredData = useMemo(() => {
+    return allVisitors.filter(v => {
+      const vDate = new Date(v.timeIn);
+      const isStaff = v.college?.includes("Staff") || v.college?.includes("Faculty") || v.institutionalId?.endsWith("@neu.edu.ph");
+      
+      // Date Filter
+      let matchesDate = true;
+      const now = new Date();
+      if (dateRange === "today") {
+        matchesDate = vDate >= startOfDay(now) && vDate <= endOfDay(now);
+      } else if (dateRange === "week") {
+        matchesDate = vDate >= startOfWeek(now);
+      } else if (dateRange === "month") {
+        matchesDate = vDate >= subDays(now, 30);
+      }
+
+      // College Filter
+      const matchesCollege = filterCollege === "all" || v.college === filterCollege;
+      
+      // Purpose Filter
+      const matchesPurpose = filterPurpose === "all" || v.purpose === filterPurpose;
+
+      // Role Filter
+      const matchesRole = filterRole === "all" || (filterRole === "staff" ? isStaff : !isStaff);
+
+      // Search Filter
+      const matchesSearch = v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           v.institutionalId.toLowerCase().includes(searchTerm.toLowerCase());
+
+      return matchesDate && matchesCollege && matchesPurpose && matchesRole && matchesSearch;
+    });
+  }, [allVisitors, dateRange, filterCollege, filterPurpose, filterRole, searchTerm]);
+
   const stats = useMemo(() => {
-    const now = new Date();
-    const todayStart = new Date().setHours(0, 0, 0, 0);
-    const weekStart = startOfWeek(now).getTime();
-
-    const countToday = allVisitors.filter(v => new Date(v.timeIn).getTime() >= todayStart).length;
-    const countWeek = allVisitors.filter(v => new Date(v.timeIn).getTime() >= weekStart).length;
-
+    const staffCount = filteredData.filter(v => v.college?.includes("Staff") || v.college?.includes("Faculty") || v.institutionalId?.endsWith("@neu.edu.ph")).length;
     return {
-      today: countToday, 
-      week: countWeek, 
-      blocked: blockedList.length, 
-      active: allVisitors.length
+      total: filteredData.length,
+      staff: staffCount,
+      students: filteredData.length - staffCount,
+      blocked: blockedList.length
     };
-  }, [blockedList, allVisitors]);
-
-  const filteredVisitors = useMemo(() => {
-    return allVisitors.filter(v => 
-      v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      v.institutionalId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.college.toLowerCase().includes(searchTerm.toLowerCase())
-    ).slice(0, 20);
-  }, [allVisitors, searchTerm]);
+  }, [filteredData, blockedList]);
 
   const userRole = useMemo(() => {
     if (!user) return "Guest";
@@ -211,24 +258,121 @@ export default function AdminDashboard() {
 
         {user && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card className="border-none shadow-sm rounded-xl bg-white">
-                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
-                  <div className="flex items-center gap-2 text-black/80">
-                    <Users className="w-5 h-5" />
-                    <span className="text-sm font-bold uppercase tracking-tight">Today</span>
+            {/* Filtering Controls */}
+            <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden">
+              <div className="p-6 border-b border-black/5 flex items-center gap-3 bg-primary/5">
+                <Filter className="w-5 h-5 text-primary" />
+                <h3 className="text-sm font-black uppercase tracking-widest text-primary">Advanced Analytics Filters</h3>
+              </div>
+              <CardContent className="p-6 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Date Range</label>
+                  <Select value={dateRange} onValueChange={(v: any) => setDateRange(v)}>
+                    <SelectTrigger className="h-10 text-xs font-bold bg-[#F8F9FA] rounded-none border-black/10">
+                      <SelectValue placeholder="Select Range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today">Today</SelectItem>
+                      <SelectItem value="week">This Week</SelectItem>
+                      <SelectItem value="month">Last 30 Days</SelectItem>
+                      <SelectItem value="all">All Time</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">College / Dept</label>
+                  <Select value={filterCollege} onValueChange={setFilterCollege}>
+                    <SelectTrigger className="h-10 text-xs font-bold bg-[#F8F9FA] rounded-none border-black/10">
+                      <SelectValue placeholder="All Colleges" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Colleges</SelectItem>
+                      {COLLEGES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Visit Purpose</label>
+                  <Select value={filterPurpose} onValueChange={setFilterPurpose}>
+                    <SelectTrigger className="h-10 text-xs font-bold bg-[#F8F9FA] rounded-none border-black/10">
+                      <SelectValue placeholder="All Purposes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Purposes</SelectItem>
+                      {PURPOSES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">User Category</label>
+                  <Select value={filterRole} onValueChange={(v: any) => setFilterRole(v)}>
+                    <SelectTrigger className="h-10 text-xs font-bold bg-[#F8F9FA] rounded-none border-black/10">
+                      <SelectValue placeholder="All Roles" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Users</SelectItem>
+                      <SelectItem value="staff">Staff / Admin</SelectItem>
+                      <SelectItem value="student">Students</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Search Records</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Name or ID..." 
+                      className="pl-9 h-10 text-xs font-bold bg-[#F8F9FA] rounded-none border-black/10"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                   </div>
-                  <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.today : "--"}</h3>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <Card className="border-none shadow-sm rounded-xl bg-white group hover:bg-primary transition-colors duration-300">
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
+                  <div className="flex items-center gap-2 text-primary group-hover:text-white transition-colors">
+                    <Users className="w-5 h-5" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Total Visits</span>
+                  </div>
+                  <h3 className="text-5xl font-black text-black group-hover:text-white tracking-tighter transition-colors">
+                    {isMounted ? stats.total : "--"}
+                  </h3>
+                  <p className="text-[9px] font-bold text-muted-foreground group-hover:text-white/60 uppercase tracking-widest">Current Selection</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-sm rounded-xl bg-white group hover:bg-accent transition-colors duration-300">
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
+                  <div className="flex items-center gap-2 text-primary transition-colors">
+                    <BadgeCheck className="w-5 h-5" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Staff / Admin</span>
+                  </div>
+                  <h3 className="text-5xl font-black text-black tracking-tighter">
+                    {isMounted ? stats.staff : "--"}
+                  </h3>
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Faculty & Employee</p>
                 </CardContent>
               </Card>
 
               <Card className="border-none shadow-sm rounded-xl bg-white">
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
-                  <div className="flex items-center gap-2 text-black/80">
-                    <TrendingUp className="w-5 h-5 text-green-600" />
-                    <span className="text-sm font-bold uppercase tracking-tight">This Week</span>
+                  <div className="flex items-center gap-2 text-primary">
+                    <UserIcon className="w-5 h-5" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Students</span>
                   </div>
-                  <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.week : "--"}</h3>
+                  <h3 className="text-5xl font-black text-black tracking-tighter">
+                    {isMounted ? stats.students : "--"}
+                  </h3>
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Enrolled Learners</p>
                 </CardContent>
               </Card>
 
@@ -236,34 +380,25 @@ export default function AdminDashboard() {
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-destructive">
                     <Ban className="w-5 h-5" />
-                    <span className="text-sm font-bold uppercase tracking-tight">Blocked</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">Blocked</span>
                   </div>
-                  <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.blocked : "--"}</h3>
-                </CardContent>
-              </Card>
-
-              <Card className="border-none shadow-sm rounded-xl bg-white">
-                <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
-                  <div className="flex items-center gap-2 text-primary">
-                    <Monitor className="w-5 h-5" />
-                    <span className="text-sm font-bold uppercase tracking-tight">All Logs</span>
-                  </div>
-                  <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? allVisitors.length : "--"}</h3>
+                  <h3 className="text-5xl font-black text-black tracking-tighter">
+                    {isMounted ? stats.blocked : "--"}
+                  </h3>
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Restricted Access</p>
                 </CardContent>
               </Card>
             </div>
 
+            {/* Activity Table */}
             <Card className="border border-black/5 shadow-sm rounded-xl bg-white">
               <div className="p-6 border-b border-black/5 flex flex-col md:flex-row items-center justify-between gap-4">
-                <h2 className="text-lg font-black text-black uppercase tracking-tight">Live Activity Log</h2>
-                <div className="relative w-full md:w-80">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search Logs..." 
-                    className="pl-9 h-10 text-xs border-muted-foreground/30 bg-white"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                <div className="flex items-center gap-3">
+                  <Monitor className="w-5 h-5 text-primary" />
+                  <h2 className="text-lg font-black text-black uppercase tracking-tight">Filtered Activity Logs</h2>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Showing {filteredData.length} entries
                 </div>
               </div>
 
@@ -272,15 +407,15 @@ export default function AdminDashboard() {
                   <TableHeader className="bg-[#F4F4F4]">
                     <TableRow className="border-none">
                       <TableHead className="text-[10px] font-black uppercase text-black py-4">Time In & Date</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase text-black">Name</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-black">Name & ID</TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-black">College / Office</TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-black">Purpose</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase text-black">Student/Admin</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase text-black text-center">Status</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-black">Identification</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-black text-center">Security Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredVisitors.map((visitor) => {
+                    {filteredData.slice(0, 50).map((visitor) => {
                       const isBlocked = blockedList.some(b => b.institutionalId === visitor.institutionalId);
                       const isStaff = visitor.college?.includes("Staff") || visitor.college?.includes("Faculty") || visitor.institutionalId?.endsWith("@neu.edu.ph");
                       
@@ -301,12 +436,19 @@ export default function AdminDashboard() {
                           <TableCell className="text-xs font-medium text-black/70">{visitor.college}</TableCell>
                           <TableCell className="text-xs font-medium italic text-primary">"{visitor.purpose}"</TableCell>
                           <TableCell>
-                            <span className={cn(
-                              "text-[9px] font-black px-2 py-0.5 rounded uppercase",
-                              isStaff ? "bg-accent/20 text-accent-foreground" : "bg-primary/10 text-primary"
+                            <div className={cn(
+                              "inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest",
+                              isStaff ? "bg-accent text-accent-foreground" : "bg-neutral-200 text-neutral-600"
                             )}>
-                              {isStaff ? "Admin/Staff" : "Student"}
-                            </span>
+                              {isStaff ? (
+                                <>
+                                  <BadgeCheck className="w-3 h-3" />
+                                  Staff / Admin
+                                </>
+                              ) : (
+                                "Student"
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-center">
                             <div className={cn(
@@ -321,10 +463,10 @@ export default function AdminDashboard() {
                         </TableRow>
                       );
                     })}
-                    {filteredVisitors.length === 0 && (
+                    {filteredData.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="py-20 text-center text-muted-foreground italic">
-                          No matching records found.
+                          No matching records found for the current filter criteria.
                         </TableCell>
                       </TableRow>
                     )}
