@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Visitor": {
@@ -140,7 +141,8 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "anonymous",
+      "google.com"
     ]
   },
   "firestore": {
@@ -225,7 +227,6 @@
           ]
         }
       }
-    ],
-    "reasoning": "The recommended Firestore structure prioritizes security, scalability, and debuggability by strictly adhering to the core design principles and strategy mandates. Authorization Independence is paramount, achieved primarily through strategic denormalization and structural segregation, ensuring robust and simple security rules.\n\n**Authorization Independence:**\n1.  **Admin Role Segregation (`/roles_admin/{adminId}`):** Administrative privileges are granted by the mere existence of a document in the `/roles_admin` collection, where `adminId` is the `request.auth.uid`. This allows for a simple, atomic existence check in security rules, completely avoiding hierarchical `get()` calls to determine user roles or permissions. This fulfills DBAC (Database-Backed Access Control) by storing roles in the database.\n2.  **Centralized Institutional Data Ownership:** Core application data entities such as `Visitor` profiles, `VisitLog` entries, and `BlockEntry` records are treated as institution-owned data, rather than individually user-owned. This design choice means that access to these collections is primarily restricted to authenticated administrators. The security rules for `/visitors`, `/visitLogs`, and `/blockEntries` will check for admin status via `/roles_admin`, eliminating any need for `get()` calls to check for ownership or related document attributes for authorization within the rules.\n3.  **Denormalization for Context:** To enhance data clarity and support QAPs without `get()` calls in rules, critical contextual data is denormalized:\n    *   Each `VisitLog` document (`/visitLogs/{visitLogId}`) will include denormalized `visitorFullName` and `visitorCollegeOrOffice` fields. This ensures that when an administrator retrieves a `VisitLog`, all necessary display information about the visitor is immediately available within that single document, removing the need for additional client-side reads or complex rules to fetch visitor details.\n    *   Similarly, each `BlockEntry` document (`/blockEntries/{blockEntryId}`) will contain denormalized `visitorFullName` and `visitorInstitutionalId`. This makes each block entry self-contained for administrative review and reporting.\n4.  **Backend for Complex Operations:** The visitor sign-in process, which involves looking up or creating `Visitor` profiles, checking `BlockEntry` status, and creating `VisitLog` entries, will be mediated by a trusted backend service (e.g., Cloud Functions). This backend service, operating with administrative privileges, will handle the multi-document reads and writes required for a secure and atomic sign-in flow. This strategy offloads complex authorization logic from client-side Firestore rules, thus preventing rule-based `get()` dependencies and ensuring that the rules remain declarative and performant.\n\n**QAPs (Rules are not Filters):**\n1.  **Structural Segregation:** The principle of Structural Segregation ensures that all documents within a given collection share a homogeneous security posture, which is key for QAPs.\n    *   The `/purposes` collection is designed for global read access (e.g., `allow read: if request.auth.uid != null;` if the sign-in portal requires anonymous auth, or simply `if true;` for fully public access). This allows any visitor (or the sign-in portal) to list all available purposes without encountering documents they are not authorized to view, as all documents are equally accessible.\n    *   The `/visitors`, `/visitLogs`, and `/blockEntries` collections are designated as admin-only. An administrator, whose status is verified by the existence of their UID in `/roles_admin`, has full read access to *all* documents within these collections. Therefore, any `list` operation performed by an admin on these collections will return a complete and fully authorized dataset, fulfilling the QAP requirement that all returned documents satisfy the security conditions.\n\nThis structure ensures clear authorization intent, simplifies security rules by isolating access patterns, and optimizes for secure, scalable `list` operations."
+    ]
   }
 }

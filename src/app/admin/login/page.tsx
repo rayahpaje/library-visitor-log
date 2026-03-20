@@ -4,20 +4,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { useAuth } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { toast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function AdminLogin() {
   const router = useRouter();
   const auth = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGoogleLogin = async () => {
     if (!auth) return;
     setIsLoading(true);
+    setError(null);
     
     const provider = new GoogleAuthProvider();
     
@@ -25,20 +28,28 @@ export default function AdminLogin() {
       await signInWithPopup(auth, provider);
       toast({ title: "Welcome back!", description: "Successfully authenticated with Google." });
       router.push("/admin/dashboard");
-    } catch (error: any) {
-      console.error("Login Error:", error);
-      toast({ 
-        variant: "destructive", 
-        title: "Login Failed", 
-        description: error.message || "Failed to sign in with Google." 
-      });
+    } catch (err: any) {
+      console.error("Login Error:", err);
+      
+      let errorMessage = err.message || "Failed to sign in with Google.";
+      
+      if (err.code === 'auth/operation-not-allowed') {
+        errorMessage = "Google Sign-In is not enabled in your Firebase Console. Please go to Authentication > Sign-in method and enable Google.";
+        setError(errorMessage);
+      } else {
+        toast({ 
+          variant: "destructive", 
+          title: "Login Failed", 
+          description: errorMessage 
+        });
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F7F5] flex flex-col">
+    <div className="min-h-screen bg-[#F4F7F5] flex flex-col font-body">
       <SiteHeader />
       
       <main className="flex-1 flex flex-col items-center justify-center p-6 pb-20">
@@ -50,6 +61,16 @@ export default function AdminLogin() {
               <p className="text-white/80 text-sm font-medium">Please sign in with your staff Google account</p>
             </div>
           </div>
+
+          {error && (
+            <Alert variant="destructive" className="mb-6 text-left bg-red-50 text-red-900 border-red-200">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Configuration Required</AlertTitle>
+              <AlertDescription className="text-xs">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
           
           <div className="flex flex-col items-center space-y-4">
             <Button 
