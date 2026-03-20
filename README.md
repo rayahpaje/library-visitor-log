@@ -93,7 +93,7 @@
 <div class="section">
   <h2>Live Application</h2>
   <p>
-    <a href="https://9000-firebase-studio-1773384073266.cluster-osvg2nzmmzhzqqjio6oojllbg4.cloudworkstations.dev" target="_blank">
+    <a href="https://library-visitor-log-84h8.vercel.app/">
       Open NEU Library Visitor Log System
     </a>
   </p>
