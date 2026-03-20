@@ -42,12 +42,9 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="bg-primary text-white py-4 px-6 md:px-10 flex items-center h-24 shadow-lg z-50 sticky top-0" suppressHydrationWarning>
-      {/* Left Spacer - ensures branding stays centered */}
-      <div className="flex-1 flex justify-start" />
-
-      {/* Center Branding */}
-      <div className="flex items-center gap-6 justify-center flex-shrink-0">
+    <header className="bg-primary text-white py-4 px-6 md:px-10 flex items-center justify-between h-24 shadow-lg z-50 sticky top-0" suppressHydrationWarning>
+      {/* Left Branding */}
+      <div className="flex items-center gap-6">
         <Link href="/" className="relative w-16 h-16 flex items-center justify-center bg-white rounded-full shadow-xl overflow-hidden transition-all hover:scale-105 group border-2 border-white/20">
           {logo && (
             <div className="relative w-12 h-12">
@@ -69,7 +66,7 @@ export function SiteHeader() {
       </div>
 
       {/* Right Side Actions */}
-      <div className="flex-1 flex justify-end items-center gap-4">
+      <div className="flex items-center gap-4">
         {isMounted && user ? (
           <div className="flex items-center gap-4">
             <div className="hidden md:flex flex-col items-end -space-y-1">
