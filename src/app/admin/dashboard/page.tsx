@@ -175,7 +175,7 @@ export default function AdminDashboard() {
                 <Users className="w-5 h-5" />
                 <span className="text-sm font-bold">Today's Visitors</span>
               </div>
-              <h3 className="text-5xl font-extrabold text-black tracking-tighter">{stats.today}</h3>
+              <h3 className="text-5xl font-extrabold text-black tracking-tighter">{isMounted ? stats.today : 0}</h3>
             </CardContent>
           </Card>
 
@@ -185,7 +185,7 @@ export default function AdminDashboard() {
                 <TrendingUp className="w-5 h-5" />
                 <span className="text-sm font-bold">This Week</span>
               </div>
-              <h3 className="text-5xl font-extrabold text-black tracking-tighter">{stats.week}</h3>
+              <h3 className="text-5xl font-extrabold text-black tracking-tighter">{isMounted ? stats.week : 0}</h3>
             </CardContent>
           </Card>
 
@@ -195,7 +195,7 @@ export default function AdminDashboard() {
                 <Ban className="w-5 h-5 text-destructive" />
                 <span className="text-sm font-bold">Blocked</span>
               </div>
-              <h3 className="text-5xl font-extrabold text-black tracking-tighter">{stats.blocked}</h3>
+              <h3 className="text-5xl font-extrabold text-black tracking-tighter">{isMounted ? stats.blocked : 0}</h3>
             </CardContent>
           </Card>
 
@@ -205,7 +205,7 @@ export default function AdminDashboard() {
                 <Monitor className="w-5 h-5" />
                 <span className="text-sm font-bold">Active Sessions</span>
               </div>
-              <h3 className="text-5xl font-extrabold text-black tracking-tighter">{stats.active}</h3>
+              <h3 className="text-5xl font-extrabold text-black tracking-tighter">{isMounted ? stats.active : 0}</h3>
             </CardContent>
           </Card>
         </div>
@@ -274,7 +274,7 @@ export default function AdminDashboard() {
                             <TableCell className="text-sm font-medium py-4">{formatTime(visitor.timeIn)}</TableCell>
                             <TableCell className="text-sm font-bold text-black">{visitor.name}</TableCell>
                             <TableCell className="text-sm font-medium text-black/70">{visitor.college}</TableCell>
-                            <TableCell className="text-sm font-medium text-black/70">{visitor.purpose?.split(' ')[0]}</TableCell>
+                            <TableCell className="text-sm font-medium text-black/70">{visitor.purpose}</TableCell>
                             <TableCell className="text-center">
                               <div className={cn(
                                 "inline-flex items-center px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-[0_2px_5px_rgba(0,0,0,0.1)] transition-all",
@@ -312,8 +312,7 @@ export default function AdminDashboard() {
                     {blockedList.map((user) => (
                       <TableRow 
                         key={user.id || user.institutionalId} 
-                        className="hover:bg-muted/10 border-black/5 group cursor-pointer"
-                        onClick={() => handleUnblock(user)}
+                        className="hover:bg-muted/10 border-black/5 group"
                       >
                         <TableCell className="py-4 text-sm font-bold text-black">
                           {user.name}
@@ -322,6 +321,7 @@ export default function AdminDashboard() {
                           <Button 
                             variant="ghost" 
                             size="sm"
+                            onClick={() => handleUnblock(user)}
                             className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider bg-[#FFEBEE] text-[#D32F2F] border border-[#D32F2F]/10 hover:bg-[#D32F2F] hover:text-white rounded-md shadow-[0_2px_5px_rgba(0,0,0,0.1)] transition-all"
                           >
                             Unblock
