@@ -21,9 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, CheckCircle2, User as UserIcon, LogIn } from "lucide-react";
+import { Loader2, Check, User as UserIcon, LogIn } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { Card, CardContent } from "@/components/ui/card";
 import { useFirestore, useUser, useAuth } from "@/firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -64,6 +63,7 @@ export function VisitorSignInForm() {
   const [loginMethod, setLoginMethod] = useState<"tap" | "email">("tap");
   const [submitted, setSubmitted] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [lastSubmission, setLastSubmission] = useState<{ name: string; college: string } | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -79,7 +79,6 @@ export function VisitorSignInForm() {
     },
   });
 
-  // Auto-fill form from authenticated user details
   useEffect(() => {
     if (user && isMounted) {
       form.setValue("fullName", user.displayName || "");
@@ -119,6 +118,7 @@ export function VisitorSignInForm() {
 
     addDoc(collection(db, "visitors"), visitorData)
       .then(() => {
+        setLastSubmission({ name: values.fullName, college: values.college });
         setSubmitted(true);
         toast({ title: "Success", description: "Welcome to the NEU Library!" });
       })
@@ -136,20 +136,47 @@ export function VisitorSignInForm() {
 
   if (!isMounted) return null;
 
-  if (submitted) {
+  if (submitted && lastSubmission) {
     return (
-      <Card className="border-none bg-white/10 text-white">
-        <CardContent className="p-8 flex flex-col items-center text-center space-y-6">
-          <CheckCircle2 className="w-12 h-12 text-accent" />
-          <div className="space-y-2">
-            <h4 className="text-xl font-bold uppercase">Sign-in Complete!</h4>
-            <p className="text-white/80 text-sm">Entry recorded. Enjoy your study session.</p>
+      <div className="flex flex-col items-center text-center space-y-8 animate-in fade-in zoom-in duration-500 py-4">
+        {/* Checkmark Icon Container */}
+        <div className="relative">
+          <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-sm">
+            <div className="w-16 h-16 bg-[#2B473A] rounded-full flex items-center justify-center border border-white/20 shadow-lg">
+              <Check className="w-8 h-8 text-white stroke-[3]" />
+            </div>
           </div>
-          <Button onClick={() => { setSubmitted(false); form.reset(); }} variant="outline" className="text-primary border-white bg-white hover:bg-white/90 rounded-none px-8 font-bold uppercase text-xs" suppressHydrationWarning>
-            Done
-          </Button>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Welcome Text */}
+        <h2 className="text-3xl font-black text-white tracking-tight uppercase leading-tight">
+          WELCOME TO NEU<br />LIBRARY!
+        </h2>
+
+        {/* Identity Box */}
+        <div className="w-full bg-black/30 rounded-2xl p-8 space-y-2 border border-white/5 backdrop-blur-md shadow-2xl">
+          <h3 className="text-xl font-black text-white uppercase tracking-wide">
+            {lastSubmission.name}
+          </h3>
+          <p className="text-[11px] font-bold text-white/60 uppercase tracking-[0.2em]">
+            {lastSubmission.college}
+          </p>
+        </div>
+
+        {/* Success Message */}
+        <p className="text-[10px] font-black text-white/70 uppercase tracking-[0.3em]">
+          Successfully checked in. Enjoy your stay!
+        </p>
+
+        {/* Reset Action */}
+        <Button 
+          onClick={() => { setSubmitted(false); form.reset(); }} 
+          variant="ghost" 
+          className="text-white/40 hover:text-white hover:bg-transparent text-[10px] uppercase font-bold tracking-widest pt-4"
+        >
+          Click to refresh for next student
+        </Button>
+      </div>
     );
   }
 
