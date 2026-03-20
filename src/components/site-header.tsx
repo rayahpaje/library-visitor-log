@@ -1,7 +1,8 @@
+
 'use client';
 
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -35,6 +36,8 @@ export function SiteHeader() {
     if (ADMIN_EMAILS.includes(user.email || "")) return "Library Staff";
     return "Student";
   }, [user]);
+
+  const isAuthorized = useMemo(() => userRole === "Library Staff", [userRole]);
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -88,6 +91,14 @@ export function SiteHeader() {
                 {user.displayName?.charAt(0) || "U"}
               </AvatarFallback>
             </Avatar>
+
+            {isAuthorized && !pathname.includes("/admin") && (
+              <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-4 font-bold uppercase text-[10px] tracking-widest gap-2">
+                <Link href="/admin/dashboard">
+                  <LayoutDashboard className="w-4 h-4" />
+                </Link>
+              </Button>
+            )}
 
             <Button 
               onClick={handleLogout}

@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle, Info, ShieldAlert } from "lucide-react";
+import { Loader2, AlertCircle, Info, ShieldAlert, ArrowLeft } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { useAuth } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
@@ -12,6 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import Link from "next/link";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -110,7 +111,7 @@ export default function AdminLogin() {
           <div className="flex flex-col items-center space-y-6">
             <Button 
               onClick={handleGoogleLogin}
-              className="w-full max-w-[320px] h-14 bg-white hover:bg-white/90 text-primary font-bold rounded-xl shadow-2xl transition-all flex items-center justify-center gap-3 border-none group" 
+              className="w-full h-14 bg-white hover:bg-white/90 text-primary font-bold rounded-xl shadow-2xl transition-all flex items-center justify-center gap-3 border-none group" 
               disabled={isLoading}
               suppressHydrationWarning
             >
@@ -139,6 +140,17 @@ export default function AdminLogin() {
                   <span className="uppercase tracking-widest text-xs">Staff Login</span>
                 </>
               )}
+            </Button>
+
+            <Button 
+              variant="ghost" 
+              asChild
+              className="w-full text-white/60 hover:text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] gap-2"
+            >
+              <Link href="/">
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Back to Student Portal
+              </Link>
             </Button>
 
             <div className="pt-6 border-t border-white/10 w-full">
