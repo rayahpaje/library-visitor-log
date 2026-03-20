@@ -31,7 +31,10 @@ export default function AdminLogin() {
     
     try {
       await signInWithPopup(auth, provider);
-      toast({ title: "Welcome back!", description: "Successfully authenticated with Google." });
+      toast({ 
+        title: "Welcome to NEU Library", 
+        description: "Successfully authenticated as Staff." 
+      });
       router.push("/admin/dashboard");
     } catch (err: any) {
       console.error("Login Error:", err);
@@ -139,17 +142,6 @@ export default function AdminLogin() {
                   <span className="uppercase tracking-widest text-xs">Staff Login</span>
                 </>
               )}
-            </Button>
-
-            <Button 
-              variant="ghost" 
-              asChild
-              className="w-full text-white/60 hover:text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] gap-2"
-            >
-              <Link href="/">
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Back to Student Portal
-              </Link>
             </Button>
 
             <div className="pt-6 border-t border-white/10 w-full">

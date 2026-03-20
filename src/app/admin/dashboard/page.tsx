@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
@@ -48,7 +47,7 @@ import {
 } from "firebase/firestore";
 import { format, parseISO, startOfWeek, startOfDay, endOfDay, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
-import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
+import { MOCK_VISITORS } from "@/lib/mock-data";
 import { toast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
@@ -160,7 +159,7 @@ export default function AdminDashboard() {
       const snapshot = await getDocs(q);
       snapshot.forEach((d) => deleteDoc(doc(db, "blockList", d.id)));
       
-      if (visitor.id && !visitor.id.startsWith('v')) { // Don't try to update mock IDs
+      if (visitor.id && !visitor.id.startsWith('v')) { 
         updateDoc(doc(db, "visitors", visitor.id), { status: "Active" });
       }
       
@@ -217,7 +216,7 @@ export default function AdminDashboard() {
 
               <div className="space-y-1.5">
                 <div className="flex items-center gap-3">
-                  <h2 className="text-3xl font-black text-primary tracking-tight">{user.displayName || "Welcome Back"}</h2>
+                  <h2 className="text-3xl font-black text-primary tracking-tight">Welcome to NEU Library</h2>
                   <div className={cn(
                     "px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md border flex items-center gap-1.5",
                     isAuthorized ? "bg-accent text-accent-foreground border-accent" : "bg-neutral-200 text-neutral-600 border-neutral-300"
@@ -226,10 +225,13 @@ export default function AdminDashboard() {
                     {isAuthorized ? "Admin" : "Student"}
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground font-medium flex items-center gap-2">
-                  <UserIcon className="w-4 h-4 text-primary" />
-                  {user.email}
-                </p>
+                <div className="flex flex-col">
+                  <p className="text-sm text-primary font-black uppercase tracking-wider">{user.displayName || "Administrator"}</p>
+                  <p className="text-[11px] text-muted-foreground font-medium flex items-center gap-2">
+                    <UserIcon className="w-3 h-3 text-primary" />
+                    {user.email}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
