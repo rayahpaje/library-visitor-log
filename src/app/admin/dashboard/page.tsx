@@ -10,8 +10,7 @@ import {
   Ban, 
   Monitor,
   Search,
-  FileText,
-  User as UserIcon
+  FileText
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -48,7 +47,7 @@ export default function AdminDashboard() {
   const { user } = useUser();
   const [searchTerm, setSearchTerm] = useState("");
   const [isMounted, setIsMounted] = useState(false);
-  const [unblockedIds, setUnblockedIds] = useState<string[]>([]);
+  const [sessionUnblockedIds, setSessionUnblockedIds] = useState<string[]>([]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -71,8 +70,9 @@ export default function AdminDashboard() {
   const blockedList = useMemo(() => {
     const firestoreData = dbBlocked || [];
     const mockData = MOCK_BLOCKED.filter(m => !firestoreData.find(f => f.institutionalId === m.institutionalId));
-    return [...firestoreData, ...mockData].filter(u => !unblockedIds.includes(u.institutionalId));
-  }, [dbBlocked, unblockedIds]);
+    // Filter out users who were unblocked in this session (demo purposes)
+    return [...firestoreData, ...mockData].filter(u => !sessionUnblockedIds.includes(u.institutionalId));
+  }, [dbBlocked, sessionUnblockedIds]);
 
   const stats = useMemo(() => {
     return {
@@ -95,7 +95,8 @@ export default function AdminDashboard() {
     const isAlreadyBlocked = blockedList.find(b => b.institutionalId === visitor.institutionalId);
     if (isAlreadyBlocked) return;
 
-    setUnblockedIds(prev => prev.filter(id => id !== visitor.institutionalId));
+    // Remove from session unblocked if they were there
+    setSessionUnblockedIds(prev => prev.filter(id => id !== visitor.institutionalId));
 
     const blockData = {
       name: visitor.name,
@@ -117,10 +118,12 @@ export default function AdminDashboard() {
   };
 
   const handleUnblock = async (blockedUser: any) => {
-    setUnblockedIds(prev => [...prev, blockedUser.institutionalId]);
+    // Optimistically remove from UI
+    setSessionUnblockedIds(prev => [...prev, blockedUser.institutionalId]);
 
     if (!db) return;
 
+    // Remove from Firestore if exists
     const q = query(collection(db, "blockList"), where("institutionalId", "==", blockedUser.institutionalId));
     getDocs(q).then((querySnapshot) => {
       if (!querySnapshot.empty) {
@@ -216,8 +219,7 @@ export default function AdminDashboard() {
             <Card className="border border-black/5 shadow-[0_4px_15px_rgba(0,0,0,0.05)] rounded-xl bg-white">
               <div className="p-6 border-b border-black/5">
                 <h2 className="text-lg font-bold text-black mb-1">Visitor Statistics & Reporting</h2>
-                <p className="text-xs text-muted-foreground mb-4 font-medium uppercase tracking-wider">Time Period Selector</p>
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-4">
                   <RadioGroup defaultValue="day" className="flex items-center gap-6">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="day" id="day" className="w-4 h-4" />

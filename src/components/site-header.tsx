@@ -46,7 +46,7 @@ export function SiteHeader() {
             />
           )}
         </div>
-        <div className="flex flex-col -space-y-1">
+        <div className="flex flex-col -space-y-1 text-left">
           <h1 className="font-bold text-xl md:text-2xl tracking-tight text-[#FFD600] uppercase">NEU Library</h1>
           <p className="text-sm font-medium text-white/90">Visitor Log</p>
         </div>
