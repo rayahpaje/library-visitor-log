@@ -164,7 +164,7 @@ export default function AdminDashboard() {
         updateDoc(doc(db, "visitors", visitor.id), { status: "Active" });
       }
       
-      toast({ title: "Access Restored", description: `${visitor.name} is now ACTIVE.` });
+      toast({ title: "Access Restored", description: `${visitor.name} is now Active.` });
     } else {
       // Block Logic
       const blockDocRef = doc(collection(db, "blockList"));
@@ -179,7 +179,7 @@ export default function AdminDashboard() {
         updateDoc(doc(db, "visitors", visitor.id), { status: "Inactive" });
       }
 
-      toast({ variant: "destructive", title: "Access Restricted", description: `${visitor.name} is now INACTIVE.` });
+      toast({ variant: "destructive", title: "Access Restricted", description: `${visitor.name} is now Blocked.` });
     }
   };
 
@@ -361,7 +361,6 @@ export default function AdminDashboard() {
                       <TableHead className="text-[10px] font-black uppercase text-black">Purpose</TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-black">Identification</TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-black text-center">Status</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase text-black text-right pr-6">Management</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -384,30 +383,23 @@ export default function AdminDashboard() {
                               isStaff ? "bg-accent text-accent-foreground" : "bg-neutral-200 text-neutral-600"
                             )}>
                               {isStaff ? <BadgeCheck className="w-3 h-3" /> : <GraduationCap className="w-3 h-3" />}
-                              {isStaff ? "Staff / Admin" : "Student"}
+                              {isStaff ? "Admin" : "Student"}
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
-                            <div className={cn(
-                              "inline-flex items-center px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider",
-                              isBlocked ? "bg-red-50 text-red-600 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"
-                            )}>
-                              {isBlocked ? "INACTIVE" : "ACTIVE"}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right pr-6">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                            <button
+                              disabled={!isAuthorized}
                               onClick={() => toggleUserAccess(visitor)}
                               className={cn(
-                                "h-8 rounded-none font-black text-[10px] uppercase gap-2 transition-all",
-                                isBlocked ? "border-green-600 text-green-600 hover:bg-green-50" : "border-destructive text-destructive hover:bg-red-50"
+                                "inline-flex items-center px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all",
+                                isBlocked 
+                                  ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 cursor-pointer" 
+                                  : "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 cursor-pointer",
+                                !isAuthorized && "opacity-50 cursor-not-allowed"
                               )}
                             >
-                              {isBlocked ? <UserCheck className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
-                              {isBlocked ? "Unblock Student" : "Block Student"}
-                            </Button>
+                              {isBlocked ? "Blocked" : "Active"}
+                            </button>
                           </TableCell>
                         </TableRow>
                       );
