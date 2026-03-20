@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -46,14 +45,14 @@ export function SiteHeader() {
 
   return (
     <header className="bg-primary text-white py-4 px-6 md:px-10 flex items-center justify-between h-20 shadow-lg z-50 sticky top-0" suppressHydrationWarning>
-      <div className="flex items-center gap-4">
-        <Link href="/" className="relative w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-md overflow-hidden transition-transform hover:scale-105 border-2 border-white">
+      <div className="flex items-center gap-4 flex-1">
+        <Link href="/" className="relative w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-md overflow-hidden transition-transform hover:scale-105">
           {logo && (
             <Image 
               src={logo.imageUrl} 
               alt="NEU Logo" 
               fill
-              className="object-contain p-1"
+              className="object-contain p-0.5"
               data-ai-hint={logo.imageHint}
               priority
             />
@@ -72,7 +71,7 @@ export function SiteHeader() {
               <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2" suppressHydrationWarning>
                 <Link href="/admin/dashboard">
                   <LayoutDashboard className="w-3.5 h-3.5" />
-                  Admin Dashboard
+                  Dashboard
                 </Link>
               </Button>
             )}
@@ -102,11 +101,13 @@ export function SiteHeader() {
           </div>
         ) : isMounted ? (
           <div className="flex items-center gap-3">
-             <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm" suppressHydrationWarning>
-                <Link href={isAdminPath ? "/" : "/admin/login"}>
-                  {isAdminPath ? "Visitor Portal" : "Staff Portal"}
-                </Link>
-             </Button>
+             {!isAdminPath && (
+               <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm" suppressHydrationWarning>
+                  <Link href="/admin/login">
+                    Staff Portal
+                  </Link>
+               </Button>
+             )}
           </div>
         ) : null}
       </div>
