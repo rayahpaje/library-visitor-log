@@ -1,4 +1,3 @@
-
 import { VisitorSignInForm } from "@/components/visitor-signin-form";
 import { SiteHeader } from "@/components/site-header";
 
@@ -10,6 +9,9 @@ export default function Home() {
       <main className="flex-1 flex flex-col items-center justify-center p-6 pb-20">
         <div className="w-full max-w-[500px] bg-[#537D6B] rounded-2xl shadow-2xl p-8 md:p-12 text-white">
           <div className="text-center mb-8">
+            <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/10 text-white font-black text-[10px] uppercase tracking-[0.2em] mb-4">
+              Visitor Portal
+            </div>
             <h2 className="text-3xl font-bold tracking-tight mb-2 uppercase">WELCOME TO NEU LIBRARY!</h2>
             <p className="text-white/90 text-sm">Sign in to record your library entry</p>
             <p className="text-white/70 text-xs mt-2 italic px-4">

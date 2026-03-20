@@ -102,7 +102,7 @@ export function SiteHeader() {
             </Avatar>
             
             {userRole === "Staff Access" && !isAdminPath && (
-              <Button asChild variant="ghost" className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-full">
+              <Button asChild variant="ghost" className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-full" suppressHydrationWarning>
                 <Link href="/admin/dashboard">
                   <LayoutDashboard className="w-5 h-5" />
                 </Link>
@@ -127,11 +127,11 @@ export function SiteHeader() {
               suppressHydrationWarning
             >
               <LogIn className="w-4 h-4" />
-              GOOGLE SIGN IN
+              SIGN IN
             </Button>
             
             {!isAdminPath && (
-              <Button asChild variant="outline" className="bg-[#3D5C4E] border-none text-white hover:bg-[#324B40] gap-2 rounded-full px-6 font-bold uppercase text-[10px] tracking-widest h-10 shadow-md">
+              <Button asChild variant="outline" className="bg-[#3D5C4E] border-none text-white hover:bg-[#324B40] gap-2 rounded-full px-6 font-bold uppercase text-[10px] tracking-widest h-10 shadow-md" suppressHydrationWarning>
                 <Link href="/admin/login">
                   <ShieldCheck className="w-4 h-4" />
                   ADMIN PORTAL
