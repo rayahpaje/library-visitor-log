@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCollection, useFirestore } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, limit } from "firebase/firestore";
 import { format, parseISO } from "date-fns";
 import { MOCK_VISITORS } from "@/lib/mock-data";
@@ -43,7 +43,7 @@ export default function VisitorLogs() {
     setIsMounted(true);
   }, []);
 
-  const logsQuery = useMemo(() => {
+  const logsQuery = useMemoFirebase(() => {
     if (!db) return null;
     return query(collection(db, "visitors"), orderBy("timeIn", "desc"), limit(100));
   }, [db]);

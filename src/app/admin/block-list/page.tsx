@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from "react";
@@ -20,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useCollection, useFirestore } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, doc, deleteDoc, query, where, getDocs } from "firebase/firestore";
 import { toast } from "@/hooks/use-toast";
 import { MOCK_BLOCKED } from "@/lib/mock-data";
@@ -30,7 +29,7 @@ export default function BlockListManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [unblockedIds, setUnblockedIds] = useState<string[]>([]);
 
-  const blockListQuery = useMemo(() => {
+  const blockListQuery = useMemoFirebase(() => {
     if (!db) return null;
     return collection(db, "blockList");
   }, [db]);
