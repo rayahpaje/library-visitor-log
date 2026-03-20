@@ -96,7 +96,7 @@ export default function AdminDashboard() {
   const userRole = useMemo(() => {
     if (!user) return "Guest";
     if (user.email?.endsWith("@neu.edu.ph")) return "Library Staff";
-    return "Visitor";
+    return "Student";
   }, [user]);
 
   const handleBlock = async (visitor: any) => {
@@ -197,7 +197,7 @@ export default function AdminDashboard() {
               <Button asChild variant="outline" className="border-primary/20 text-primary hover:bg-primary/5 h-10 px-6 font-bold uppercase tracking-widest text-[10px] rounded-full shadow-sm gap-2" suppressHydrationWarning>
                 <Link href="/">
                   <ArrowRightLeft className="w-4 h-4" />
-                  Switch to Visitor Portal
+                  Switch to Student Portal
                 </Link>
               </Button>
               <div className="flex items-center gap-2 text-primary/40">

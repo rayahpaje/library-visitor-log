@@ -4,8 +4,8 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'NEU Library Visitor Log',
-  description: 'A secure and intelligent visitor management system for NEU Library.',
+  title: 'NEU Library Student Log',
+  description: 'A secure and intelligent student management system for NEU Library.',
 };
 
 export default function RootLayout({

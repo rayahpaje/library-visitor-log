@@ -29,7 +29,7 @@ export function SiteHeader() {
   const userRole = useMemo(() => {
     if (!user) return null;
     if (user.email?.endsWith("@neu.edu.ph")) return "Library Staff";
-    return "Visitor";
+    return "Student/Visitor";
   }, [user]);
 
   const handleLogout = async () => {
@@ -65,7 +65,7 @@ export function SiteHeader() {
               "text-[10px] font-black tracking-[0.2em] uppercase px-2 py-0.5 rounded",
               isAdminPath ? "bg-accent text-accent-foreground" : "bg-white/20 text-white"
             )}>
-              {isAdminPath ? "Admin Portal" : "Visitor Portal"}
+              {isAdminPath ? "Admin Portal" : "Student Portal"}
             </span>
           </div>
         </div>
@@ -79,7 +79,7 @@ export function SiteHeader() {
               <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2" suppressHydrationWarning>
                 <Link href={isAdminPath ? "/" : "/admin/dashboard"}>
                   {isAdminPath ? <ArrowRightLeft className="w-3.5 h-3.5" /> : <LayoutDashboard className="w-3.5 h-3.5" />}
-                  {isAdminPath ? "Visitor Portal" : "Admin Portal"}
+                  {isAdminPath ? "Student Portal" : "Admin Portal"}
                 </Link>
               </Button>
             )}
@@ -116,7 +116,7 @@ export function SiteHeader() {
               <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm" suppressHydrationWarning>
                 <Link href="/">
                   <ArrowRightLeft className="w-4 h-4" />
-                  Visitor Portal
+                  Student Portal
                 </Link>
               </Button>
             ) : (

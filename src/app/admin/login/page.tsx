@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle, Info } from "lucide-react";
+import { Loader2, AlertCircle, Info, ArrowRightLeft } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { useAuth } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Link from "next/link";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -117,6 +118,13 @@ export default function AdminLogin() {
               )}
             </Button>
             
+            <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm mt-4" suppressHydrationWarning>
+              <Link href="/">
+                <ArrowRightLeft className="w-4 h-4" />
+                Student Portal
+              </Link>
+            </Button>
+
             <p className="mt-6 text-white/70 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
               Protected System. Use NEU credentials only.
             </p>
