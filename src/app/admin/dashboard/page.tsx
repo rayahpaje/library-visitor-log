@@ -14,7 +14,8 @@ import {
   User as UserIcon,
   ShieldCheck,
   Filter,
-  ArrowRight
+  ArrowRight,
+  GraduationCap
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -105,7 +106,7 @@ export default function AdminDashboard() {
   const filteredData = useMemo(() => {
     return allVisitors.filter(v => {
       const vDate = new Date(v.timeIn);
-      const isStaff = v.college?.includes("Staff") || v.college?.includes("Faculty") || v.institutionalId?.endsWith("@neu.edu.ph");
+      const isStaff = v.college === "Staff/Faculty";
       
       // Date Filter
       let matchesDate = true;
@@ -136,7 +137,7 @@ export default function AdminDashboard() {
   }, [allVisitors, dateRange, filterCollege, filterPurpose, filterRole, searchTerm]);
 
   const stats = useMemo(() => {
-    const staffCount = filteredData.filter(v => v.college?.includes("Staff") || v.college?.includes("Faculty") || v.institutionalId?.endsWith("@neu.edu.ph")).length;
+    const staffCount = filteredData.filter(v => v.college === "Staff/Faculty").length;
     return {
       total: filteredData.length,
       staff: staffCount,
@@ -147,7 +148,9 @@ export default function AdminDashboard() {
 
   const userRole = useMemo(() => {
     if (!user) return "Guest";
-    if (user.email?.endsWith("@neu.edu.ph")) return "Library Staff";
+    // Check if college field in visitors (if found) or some other claim. 
+    // For now, let's refine this to check for specific staff emails or simulate the role.
+    if (user.email === "admin@neu.edu.ph" || user.email?.includes("staff")) return "Library Staff";
     return "Student";
   }, [user]);
 
@@ -215,7 +218,7 @@ export default function AdminDashboard() {
                     "px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md border flex items-center gap-1.5",
                     userRole === "Library Staff" ? "bg-accent text-accent-foreground border-accent" : "bg-primary/10 text-primary border-primary/20"
                   )}>
-                    {userRole === "Library Staff" && <BadgeCheck className="w-3.5 h-3.5" />}
+                    {userRole === "Library Staff" ? <BadgeCheck className="w-3.5 h-3.5" /> : <GraduationCap className="w-3.5 h-3.5" />}
                     {userRole}
                   </div>
                 </div>
@@ -366,7 +369,7 @@ export default function AdminDashboard() {
               <Card className="border-none shadow-sm rounded-xl bg-white">
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-primary">
-                    <UserIcon className="w-5 h-5" />
+                    <GraduationCap className="w-5 h-5" />
                     <span className="text-[10px] font-black uppercase tracking-widest">Students</span>
                   </div>
                   <h3 className="text-5xl font-black text-black tracking-tighter">
@@ -417,7 +420,7 @@ export default function AdminDashboard() {
                   <TableBody>
                     {filteredData.slice(0, 50).map((visitor) => {
                       const isBlocked = blockedList.some(b => b.institutionalId === visitor.institutionalId);
-                      const isStaff = visitor.college?.includes("Staff") || visitor.college?.includes("Faculty") || visitor.institutionalId?.endsWith("@neu.edu.ph");
+                      const isStaff = visitor.college === "Staff/Faculty";
                       
                       return (
                         <TableRow 
@@ -438,7 +441,7 @@ export default function AdminDashboard() {
                           <TableCell>
                             <div className={cn(
                               "inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest",
-                              isStaff ? "bg-accent text-accent-foreground" : "bg-neutral-200 text-neutral-600"
+                              isStaff ? "bg-accent text-accent-foreground shadow-sm" : "bg-neutral-200 text-neutral-600"
                             )}>
                               {isStaff ? (
                                 <>
@@ -446,7 +449,10 @@ export default function AdminDashboard() {
                                   Staff / Admin
                                 </>
                               ) : (
-                                "Student"
+                                <>
+                                  <GraduationCap className="w-3 h-3" />
+                                  Student
+                                </>
                               )}
                             </div>
                           </TableCell>

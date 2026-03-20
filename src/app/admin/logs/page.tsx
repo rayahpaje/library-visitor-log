@@ -8,7 +8,9 @@ import {
   Search, 
   Download,
   Calendar as CalendarIcon,
-  Clock
+  Clock,
+  BadgeCheck,
+  GraduationCap
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,7 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, limit } from "firebase/firestore";
 import { format, parseISO } from "date-fns";
 import { MOCK_VISITORS } from "@/lib/mock-data";
+import { cn } from "@/lib/utils";
 
 export default function VisitorLogs() {
   const db = useFirestore();
@@ -146,32 +149,54 @@ export default function VisitorLogs() {
                   </TableHead>
                   <TableHead className="font-bold text-black uppercase text-[10px] tracking-widest">Student Information</TableHead>
                   <TableHead className="font-bold text-black uppercase text-[10px] tracking-widest">College / Office</TableHead>
+                  <TableHead className="font-bold text-black uppercase text-[10px] tracking-widest">Role</TableHead>
                   <TableHead className="font-bold text-black uppercase text-[10px] tracking-widest">Purpose</TableHead>
                   <TableHead className="font-bold text-black text-right uppercase text-[10px] tracking-widest pr-6">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredLogs.map((log: any) => (
-                  <TableRow key={log.id || log.name} className="hover:bg-muted/30 border-b">
-                    <TableCell className="text-xs font-semibold py-4 text-muted-foreground">
-                      {formatDate(log.timeIn)}
-                    </TableCell>
-                    <TableCell className="text-xs font-bold text-[#004D40]">
-                      {formatTime(log.timeIn)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-bold text-sm text-[#004D40]">{log.name}</div>
-                      <div className="text-[10px] text-muted-foreground uppercase tracking-tight">{log.institutionalId}</div>
-                    </TableCell>
-                    <TableCell className="text-xs font-medium">{log.college}</TableCell>
-                    <TableCell className="text-xs font-medium italic">"{log.purpose}"</TableCell>
-                    <TableCell className="text-right pr-6">
-                      <Badge className="rounded-none px-3 py-0.5 font-bold text-[9px] uppercase tracking-widest border-none shadow-none bg-[#C8E6C9] text-[#2E7D32]">
-                        ACTIVE
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredLogs.map((log: any) => {
+                  const isStaff = log.college === "Staff/Faculty";
+                  return (
+                    <TableRow key={log.id || log.name} className="hover:bg-muted/30 border-b">
+                      <TableCell className="text-xs font-semibold py-4 text-muted-foreground">
+                        {formatDate(log.timeIn)}
+                      </TableCell>
+                      <TableCell className="text-xs font-bold text-[#004D40]">
+                        {formatTime(log.timeIn)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-bold text-sm text-[#004D40]">{log.name}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-tight">{log.institutionalId}</div>
+                      </TableCell>
+                      <TableCell className="text-xs font-medium">{log.college}</TableCell>
+                      <TableCell>
+                        <div className={cn(
+                          "inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest",
+                          isStaff ? "bg-accent text-accent-foreground shadow-sm" : "bg-neutral-200 text-neutral-600"
+                        )}>
+                          {isStaff ? (
+                            <>
+                              <BadgeCheck className="w-3 h-3" />
+                              Staff / Admin
+                            </>
+                          ) : (
+                            <>
+                              <GraduationCap className="w-3 h-3" />
+                              Student
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs font-medium italic">"{log.purpose}"</TableCell>
+                      <TableCell className="text-right pr-6">
+                        <Badge className="rounded-none px-3 py-0.5 font-bold text-[9px] uppercase tracking-widest border-none shadow-none bg-[#C8E6C9] text-[#2E7D32]">
+                          ACTIVE
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
