@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { LogOut, LayoutDashboard, User } from "lucide-react";
+import { LogOut, LayoutDashboard, User, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -92,18 +92,18 @@ export function SiteHeader() {
             </Avatar>
 
             <div className="flex items-center gap-2">
-              {/* Back to Student Portal Link */}
-              {pathname.includes("/admin") && (
-                <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-4 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm">
+              {/* BACK TO STUDENT PORTAL BUTTON - Always show when logged in and not on the home page */}
+              {pathname !== "/" && (
+                <Button asChild variant="outline" className="bg-white text-primary border-none hover:bg-white/90 rounded-full h-10 px-4 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-xl transition-all">
                   <Link href="/">
-                    <User className="w-4 h-4" />
-                    <span className="hidden sm:inline">Student Portal</span>
+                    <Home className="w-4 h-4" />
+                    <span>Student Portal</span>
                   </Link>
                 </Button>
               )}
 
-              {/* Admin Dashboard Link (if authorized but on home page) */}
-              {isAuthorized && !pathname.includes("/admin") && (
+              {/* ADMIN PANEL BUTTON - Show to authorized users when they are on the kiosk view */}
+              {isAuthorized && pathname === "/" && (
                 <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-4 font-bold uppercase text-[10px] tracking-widest gap-2">
                   <Link href="/admin/dashboard">
                     <LayoutDashboard className="w-4 h-4" />
