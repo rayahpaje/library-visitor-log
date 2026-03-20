@@ -15,7 +15,8 @@ import {
   Filter,
   GraduationCap,
   Lock,
-  UserCheck
+  UserCheck,
+  Loader2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -199,7 +200,11 @@ export default function AdminDashboard() {
       <SiteHeader />
       
       <main className="flex-1 p-8 max-w-[1400px] mx-auto w-full space-y-8">
-        {isMounted && user ? (
+        {isUserLoading ? (
+          <div className="flex justify-center items-center py-40">
+            <Loader2 className="w-12 h-12 animate-spin text-primary opacity-50" />
+          </div>
+        ) : isMounted && user ? (
           <div className="bg-white border border-black/5 shadow-sm rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl -z-0" />
             
@@ -235,7 +240,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-        ) : !isUserLoading && (
+        ) : (
           <div className="bg-white border border-black/5 shadow-sm rounded-2xl p-12 text-center">
              <h3 className="text-xl font-bold text-primary mb-2">Staff Access Only</h3>
              <Button className="rounded-full px-8 bg-primary font-bold uppercase tracking-widest text-xs h-11" asChild>
@@ -244,7 +249,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {user && !isAuthorized && (
+        {isMounted && user && !isAuthorized && (
           <Card className="border-none shadow-sm rounded-2xl p-20 text-center bg-white flex flex-col items-center gap-4">
             <div className="bg-red-50 p-6 rounded-full text-red-500"><Lock className="w-12 h-12" /></div>
             <h2 className="text-2xl font-black text-primary uppercase">Restricted Area</h2>
@@ -252,7 +257,7 @@ export default function AdminDashboard() {
           </Card>
         )}
 
-        {user && isAuthorized && (
+        {isMounted && user && isAuthorized && (
           <>
             <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden">
               <div className="p-6 border-b border-black/5 flex items-center gap-3 bg-primary/5">

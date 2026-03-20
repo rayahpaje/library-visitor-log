@@ -99,6 +99,10 @@ export function VisitorSignInForm() {
       await signInWithPopup(auth, provider);
       toast({ title: "Welcome!", description: "Successfully authenticated." });
     } catch (err: any) {
+      // Gracefully handle manual cancellation
+      if (err.code === 'auth/popup-closed-by-user') {
+        return;
+      }
       toast({ variant: "destructive", title: "Login Error", description: err.message });
     }
   };

@@ -36,13 +36,13 @@ export default function AdminLogin() {
       });
       router.push("/admin/dashboard");
     } catch (err: any) {
-      console.error("Login Error:", err);
-      
       // Gracefully handle if the user closes the popup manually
       if (err.code === 'auth/popup-closed-by-user') {
         setIsLoading(false);
         return;
       }
+      
+      console.error("Login Error:", err);
       
       if (err.code === 'auth/operation-not-allowed') {
         setErrorType("config");
