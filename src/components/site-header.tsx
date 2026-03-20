@@ -1,15 +1,18 @@
+
 'use client';
 
 import Link from "next/link";
-import { UserCircle, LogOut } from "lucide-react";
+import { UserCircle, LogOut, ShieldCheck, User as UserIcon, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useUser, useAuth } from "@/firebase";
-import { signOut } from "firebase/auth";
+import { signOut, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
+import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -19,6 +22,12 @@ export function SiteHeader() {
   const isAdminPath = pathname.startsWith("/admin");
   const logo = PlaceHolderImages.find(img => img.id === "neu-logo");
 
+  const userRole = useMemo(() => {
+    if (!user) return null;
+    if (user.email?.endsWith("@neu.edu.ph")) return "Staff Access";
+    return "Student Access";
+  }, [user]);
+
   const handleLogout = async () => {
     if (!auth) return;
     try {
@@ -27,6 +36,17 @@ export function SiteHeader() {
       router.push("/");
     } catch (error) {
       toast({ variant: "destructive", title: "Logout Error", description: "Failed to sign out." });
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!auth) return;
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      toast({ title: "Welcome!", description: "Successfully authenticated." });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Login Error", description: err.message });
     }
   };
 
@@ -47,7 +67,7 @@ export function SiteHeader() {
         </div>
         <div className="flex flex-col -space-y-1 text-left">
           <h1 className="font-bold text-xl md:text-2xl tracking-tight text-[#FFD600] uppercase">NEU Library</h1>
-          <p className="text-sm font-medium text-white/90">Visitor Log</p>
+          <p className="text-sm font-medium text-white/90">Visitor Portal</p>
         </div>
       </div>
 
@@ -55,8 +75,13 @@ export function SiteHeader() {
         {user ? (
           <div className="flex items-center gap-4">
             <div className="hidden md:flex flex-col items-end -space-y-1">
-              <span className="text-sm font-bold text-[#FFD600]">{user.displayName || "Admin User"}</span>
-              <span className="text-[10px] text-white/70 uppercase tracking-widest font-bold">Staff Access</span>
+              <span className="text-sm font-bold text-[#FFD600]">{user.displayName || "Member"}</span>
+              <span className={cn(
+                "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest mt-1",
+                userRole === "Staff Access" ? "bg-accent/20 text-accent border border-accent/30" : "bg-white/10 text-white/70"
+              )}>
+                {userRole}
+              </span>
             </div>
             <Avatar className="h-10 w-10 border-2 border-white/20 shadow-sm">
               <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "Admin"} />
@@ -73,24 +98,25 @@ export function SiteHeader() {
             </Button>
           </div>
         ) : (
-          <>
+          <div className="flex items-center gap-3">
+             <Button 
+              onClick={handleLogin}
+              variant="outline" 
+              className="bg-white border-none text-primary hover:bg-white/90 gap-2 rounded-full px-6 font-bold uppercase text-[10px] tracking-widest h-10 shadow-md"
+            >
+              <LogIn className="w-4 h-4" />
+              GOOGLE SIGN IN
+            </Button>
+            
             {!isAdminPath && (
               <Button asChild variant="outline" className="bg-[#3D5C4E] border-none text-white hover:bg-[#324B40] gap-2 rounded-full px-6 font-bold uppercase text-[10px] tracking-widest h-10 shadow-md">
                 <Link href="/admin/login">
-                  <UserCircle className="w-4 h-4" />
-                  ADMIN LOG
+                  <ShieldCheck className="w-4 h-4" />
+                  ADMIN PORTAL
                 </Link>
               </Button>
             )}
-            
-            {isAdminPath && !user && (
-              <Button asChild variant="outline" className="bg-transparent border-white/40 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] rounded-full h-10 px-6">
-                <Link href="/">
-                  VISITOR PORTAL
-                </Link>
-              </Button>
-            )}
-          </>
+          </div>
         )}
       </div>
     </header>

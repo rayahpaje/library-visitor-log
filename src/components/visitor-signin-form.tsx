@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -22,10 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, User as UserIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
-import { useFirestore } from "@/firebase";
+import { useFirestore, useUser } from "@/firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -58,6 +58,7 @@ const COLLEGES = [
 
 export function VisitorSignInForm() {
   const db = useFirestore();
+  const { user } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [loginMethod, setLoginMethod] = useState<"tap" | "email">("tap");
   const [submitted, setSubmitted] = useState(false);
@@ -71,6 +72,20 @@ export function VisitorSignInForm() {
       college: "College of Computing",
     },
   });
+
+  // Auto-fill form from authenticated user details
+  useEffect(() => {
+    if (user) {
+      form.setValue("fullName", user.displayName || "");
+      if (user.email) {
+        form.setValue("idNumber", user.email);
+        setLoginMethod("email");
+        if (user.email.endsWith("@neu.edu.ph")) {
+           form.setValue("college", "Staff/Faculty");
+        }
+      }
+    }
+  }, [user, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!db) return;
@@ -109,7 +124,7 @@ export function VisitorSignInForm() {
           <CheckCircle2 className="w-12 h-12 text-accent" />
           <div className="space-y-2">
             <h4 className="text-xl font-bold uppercase">Sign-in Complete!</h4>
-            <p className="text-white/80 text-sm">Welcome to NEU Library. Enjoy your study session.</p>
+            <p className="text-white/80 text-sm">Entry recorded. Enjoy your study session.</p>
           </div>
           <Button onClick={() => { setSubmitted(false); form.reset(); }} variant="outline" className="text-primary border-white bg-white hover:bg-white/90 rounded-none px-8 font-bold uppercase text-xs">
             Done
@@ -122,6 +137,18 @@ export function VisitorSignInForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        {user && (
+          <div className="bg-white/10 p-3 rounded-lg border border-white/10 flex items-center gap-3 mb-2">
+            <div className="bg-white/20 p-2 rounded-full">
+              <UserIcon className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Logged in as</span>
+              <span className="text-xs font-bold text-white">{user.displayName || user.email}</span>
+            </div>
+          </div>
+        )}
+
         <div className="flex rounded-none overflow-hidden border border-white/20 p-1 bg-[#4A6D5D]">
           <button
             type="button"
@@ -191,7 +218,7 @@ export function VisitorSignInForm() {
               render={({ field }) => (
                 <FormItem className="space-y-1">
                   <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/70">College / Office</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className="bg-[#E8EEEB] text-primary border-none focus:ring-offset-0 h-10 font-medium rounded-none text-xs">
                         <SelectValue placeholder="Select" />
@@ -214,7 +241,7 @@ export function VisitorSignInForm() {
               render={({ field }) => (
                 <FormItem className="space-y-1">
                   <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-white/70">Purpose</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className="bg-[#E8EEEB] text-primary border-none focus:ring-offset-0 h-10 font-medium rounded-none text-xs">
                         <SelectValue placeholder="Select" />
@@ -238,7 +265,7 @@ export function VisitorSignInForm() {
           className="w-full bg-[#3D5C4E] hover:bg-[#324B40] text-white font-bold h-12 rounded-none uppercase tracking-widest text-xs mt-4" 
           disabled={isLoading}
         >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "SIGN IN ENTRY"}
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "RECORD ENTRY"}
         </Button>
       </form>
     </Form>
