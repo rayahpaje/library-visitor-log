@@ -19,13 +19,11 @@ export type BlockedUser = {
 // We use static ISO strings here to avoid hydration mismatches between server and client.
 const STATIC_NOW = "2024-05-24T10:30:00.000Z";
 
-export const MOCK_VISITORS: Visitor[] = [
-  { id: 'v4', name: 'Luna Belle Blake', institutionalId: '2023-3001', college: 'College of Business', purpose: 'Reading books', timeIn: STATIC_NOW, status: 'Active' },
-  { id: 'v5', name: 'Aiden Blake', institutionalId: '2021-9988', college: 'College of Informatics and Computing Science', purpose: 'Use of computer', timeIn: STATIC_NOW, status: 'Active' },
-  { id: 'v6', name: 'Elena Gilbert', institutionalId: '2022-5566', college: 'College of Nursing', purpose: 'Reading books', timeIn: STATIC_NOW, status: 'Active' },
-  { id: 'v7', name: 'Mateo Gabriel Silva', institutionalId: '2021-4422', college: 'College of Informatics and Computing Science', purpose: 'Use of computer', timeIn: STATIC_NOW, status: 'Active' },
-  { id: 'v8', name: 'Sofia Isabel Luna', institutionalId: '2022-1199', college: 'College of Arts', purpose: 'Doing assignments', timeIn: STATIC_NOW, status: 'Active' },
-];
+/**
+ * MOCK_VISITORS is now empty to ensure the Live Activity Logs 
+ * only show real-time entries from the database.
+ */
+export const MOCK_VISITORS: Visitor[] = [];
 
 export const MOCK_BLOCKED: BlockedUser[] = [
   { id: 'b1', name: 'Jane Doe', institutionalId: '2019-0001', reason: 'Repeated noise violations', dateBlocked: '2024-03-15' },
