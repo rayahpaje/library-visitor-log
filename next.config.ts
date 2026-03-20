@@ -33,6 +33,12 @@ const nextConfig: NextConfig = {
         hostname: 'upload.wikimedia.org',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'scontent.fmnl4-2.fna.fbcdn.net',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
