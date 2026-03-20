@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { UserCircle, LogOut, ShieldCheck, User as UserIcon, LogIn } from "lucide-react";
+import { LogOut, ShieldCheck, LogIn, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -57,7 +57,7 @@ export function SiteHeader() {
   return (
     <header className="bg-[#004D40] text-white py-4 px-6 md:px-10 flex items-center justify-between h-20 shadow-md z-50 sticky top-0">
       <div className="flex items-center gap-4">
-        <div className="relative w-14 h-14 bg-white rounded-full flex items-center justify-center overflow-hidden border-2 border-white shadow-lg">
+        <Link href="/" className="relative w-14 h-14 bg-white rounded-full flex items-center justify-center overflow-hidden border-2 border-white shadow-lg transition-transform hover:scale-105">
           {logo && (
             <Image 
               src={logo.imageUrl} 
@@ -68,10 +68,17 @@ export function SiteHeader() {
               data-ai-hint={logo.imageHint}
             />
           )}
-        </div>
+        </Link>
         <div className="flex flex-col -space-y-1 text-left">
           <h1 className="font-bold text-xl md:text-2xl tracking-tight text-[#FFD600] uppercase">NEU Library</h1>
-          <p className="text-sm font-medium text-white/90">Visitor Portal</p>
+          <div className="flex items-center gap-2">
+            <span className={cn(
+              "text-[10px] font-black tracking-[0.2em] uppercase px-2 py-0.5 rounded",
+              isAdminPath ? "bg-accent text-accent-foreground" : "bg-white/20 text-white"
+            )}>
+              {isAdminPath ? "Admin Portal" : "Visitor Portal"}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -88,15 +95,25 @@ export function SiteHeader() {
               </span>
             </div>
             <Avatar className="h-10 w-10 border-2 border-white/20 shadow-sm">
-              <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "Admin"} />
+              <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} />
               <AvatarFallback className="bg-white/10 text-white font-bold">
-                {user.displayName?.charAt(0) || "A"}
+                {user.displayName?.charAt(0) || "U"}
               </AvatarFallback>
             </Avatar>
+            
+            {userRole === "Staff Access" && !isAdminPath && (
+              <Button asChild variant="ghost" className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-full">
+                <Link href="/admin/dashboard">
+                  <LayoutDashboard className="w-5 h-5" />
+                </Link>
+              </Button>
+            )}
+
             <Button 
               onClick={handleLogout}
               variant="outline" 
               className="bg-transparent border-white/40 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] rounded-full h-10 px-4"
+              suppressHydrationWarning
             >
               <LogOut className="w-4 h-4" />
             </Button>
@@ -107,6 +124,7 @@ export function SiteHeader() {
               onClick={handleLogin}
               variant="outline" 
               className="bg-white border-none text-primary hover:bg-white/90 gap-2 rounded-full px-6 font-bold uppercase text-[10px] tracking-widest h-10 shadow-md"
+              suppressHydrationWarning
             >
               <LogIn className="w-4 h-4" />
               GOOGLE SIGN IN
