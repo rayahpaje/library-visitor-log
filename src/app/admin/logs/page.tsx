@@ -122,7 +122,7 @@ export default function VisitorLogs() {
                   </SelectTrigger>
                   <SelectContent className="rounded-none">
                     <SelectItem value="all">All Colleges</SelectItem>
-                    <SelectItem value="College of Computing">College of Computing</SelectItem>
+                    <SelectItem value="College of Informatics and Computing Science">College of Informatics and Computing Science</SelectItem>
                     <SelectItem value="College of Arts">College of Arts</SelectItem>
                     <SelectItem value="College of Science">College of Science</SelectItem>
                     <SelectItem value="College of Engineering">College of Engineering</SelectItem>

@@ -46,7 +46,7 @@ const PURPOSES = [
 ];
 
 const COLLEGES = [
-  "College of Computing", 
+  "College of Informatics and Computing Science", 
   "College of Arts", 
   "College of Science", 
   "College of Engineering", 
@@ -75,7 +75,7 @@ export function VisitorSignInForm() {
       idNumber: "",
       fullName: "",
       purpose: "Reading books",
-      college: "College of Computing",
+      college: "College of Informatics and Computing Science",
     },
   });
 
