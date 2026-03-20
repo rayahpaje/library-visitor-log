@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle, Info } from "lucide-react";
+import { Loader2, AlertCircle, Info, ShieldAlert } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { useAuth } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Image from "next/image";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -16,6 +18,7 @@ export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorType, setErrorType] = useState<"config" | "other" | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const bgImage = PlaceHolderImages.find(img => img.id === "neu-campus-bg");
 
   const handleGoogleLogin = async () => {
     if (!auth) return;
@@ -34,7 +37,7 @@ export default function AdminLogin() {
       
       if (err.code === 'auth/operation-not-allowed') {
         setErrorType("config");
-        setErrorMessage("Google Sign-In is not enabled. Please go to your Firebase Console and enable it under Authentication > Sign-in method.");
+        setErrorMessage("Google Sign-In is not enabled. Please go to your Firebase Console.");
       } else {
         setErrorType("other");
         setErrorMessage(err.message || "Failed to sign in with Google.");
@@ -50,34 +53,51 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F7F5] flex flex-col font-body">
+    <div className="min-h-screen relative flex flex-col font-body overflow-hidden">
+      {/* Dynamic Campus Background */}
+      {bgImage && (
+        <div className="fixed inset-0 -z-10">
+          <Image 
+            src={bgImage.imageUrl} 
+            alt="NEU Campus" 
+            fill 
+            className="object-cover opacity-70 scale-110 blur-[1px]"
+            data-ai-hint={bgImage.imageHint}
+            priority
+          />
+          <div className="absolute inset-0 bg-primary/80 backdrop-blur-sm" />
+        </div>
+      )}
+
       <SiteHeader />
       
-      <main className="flex-1 flex flex-col items-center justify-center p-6 pb-20">
-        <div className="w-full max-w-[550px] bg-[#537D6B] rounded-3xl shadow-2xl p-10 md:p-14 text-white text-center">
-          <div className="space-y-6 mb-10">
-            <h2 className="text-3xl font-bold tracking-tight uppercase">WELCOME TO NEU LIBRARY!</h2>
-            <div className="space-y-2">
-              <p className="text-white/80 text-sm font-medium">Please sign in with your NEU Institutional Email</p>
+      <main className="flex-1 flex flex-col items-center justify-center p-6 pb-20 z-10">
+        <div className="w-full max-w-[500px] bg-primary/95 backdrop-blur-xl rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.4)] p-10 md:p-14 text-white text-center border border-white/10">
+          <div className="mb-10 flex flex-col items-center">
+            <div className="bg-accent/20 p-4 rounded-full mb-6 border border-accent/30 shadow-inner">
+              <ShieldAlert className="w-12 h-12 text-accent" />
             </div>
+            <h2 className="text-3xl font-black tracking-tight uppercase text-white mb-2">ADMIN PORTAL</h2>
+            <div className="w-16 h-1 bg-accent rounded-full mb-4" />
+            <p className="text-white/70 text-xs font-bold uppercase tracking-[0.2em]">Restricted Access Area</p>
           </div>
 
           {errorType === "config" && (
-            <Alert className="mb-8 text-left bg-blue-50 text-blue-900 border-blue-200">
+            <Alert className="mb-8 text-left bg-blue-50/10 text-white border-blue-200/20 backdrop-blur-md">
               <div className="flex items-center gap-3">
-                <Info className="h-5 w-5 text-blue-700" />
-                <AlertTitle className="font-bold text-sm">Action Required: Enable Google Provider</AlertTitle>
+                <Info className="h-5 w-5 text-accent" />
+                <AlertTitle className="font-bold text-sm">Action Required</AlertTitle>
               </div>
-              <AlertDescription className="text-xs mt-1 leading-relaxed">
-                To allow signing in, you must go to the <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold">Firebase Console</a>, navigate to <b>Authentication &gt; Sign-in method</b>, and enable the <b>Google</b> provider.
+              <AlertDescription className="text-xs mt-1 leading-relaxed text-white/80">
+                Please enable Google Sign-In in your Firebase Console.
               </AlertDescription>
             </Alert>
           )}
 
           {errorType === "other" && (
-            <Alert variant="destructive" className="mb-8 text-left bg-red-50 text-red-900 border-red-200">
+            <Alert variant="destructive" className="mb-8 text-left bg-red-50/10 text-white border-red-200/20">
               <div className="flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-red-700" />
+                <AlertCircle className="h-5 w-5 text-destructive" />
                 <AlertTitle className="font-bold text-sm">Authentication Error</AlertTitle>
               </div>
               <AlertDescription className="text-xs mt-1">
@@ -86,10 +106,10 @@ export default function AdminLogin() {
             </Alert>
           )}
           
-          <div className="flex flex-col items-center space-y-4">
+          <div className="flex flex-col items-center space-y-6">
             <Button 
               onClick={handleGoogleLogin}
-              className="w-full max-w-[320px] h-14 bg-white hover:bg-white/90 text-[#004D40] font-bold rounded-lg shadow-lg transition-all flex items-center justify-center gap-3 border-none" 
+              className="w-full max-w-[320px] h-14 bg-white hover:bg-white/90 text-primary font-bold rounded-xl shadow-2xl transition-all flex items-center justify-center gap-3 border-none group" 
               disabled={isLoading}
               suppressHydrationWarning
             >
@@ -97,7 +117,7 @@ export default function AdminLogin() {
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -115,17 +135,26 @@ export default function AdminLogin() {
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  Sign in with Google
+                  <span className="uppercase tracking-widest text-xs">Staff Login</span>
                 </>
               )}
             </Button>
 
-            <p className="mt-6 text-white/70 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
-              Protected System. Use NEU credentials only.
-            </p>
+            <div className="pt-6 border-t border-white/10 w-full">
+              <p className="text-accent text-[11px] font-black uppercase tracking-[0.25em] mb-2">
+                Protected System
+              </p>
+              <p className="text-white/60 text-[9px] font-bold uppercase tracking-widest leading-relaxed">
+                Use official NEU credentials only. Unauthorized access is recorded.
+              </p>
+            </div>
           </div>
         </div>
       </main>
+
+      <footer className="py-6 text-center text-white/40 text-[9px] uppercase tracking-[0.4em] z-10 font-bold">
+        Security Infrastructure • NEU Library
+      </footer>
     </div>
   );
 }

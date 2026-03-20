@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { LogOut, ShieldCheck, LayoutDashboard, ArrowRightLeft } from "lucide-react";
+import { LogOut, LayoutDashboard, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -44,37 +44,29 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="bg-[#004D40] text-white py-4 px-6 md:px-10 flex items-center justify-between h-20 shadow-md z-50 sticky top-0" suppressHydrationWarning>
+    <header className="bg-primary text-white py-4 px-6 md:px-10 flex items-center justify-between h-20 shadow-lg z-50 sticky top-0" suppressHydrationWarning>
       <div className="flex items-center gap-4">
-        <Link href="/" className="relative w-16 h-16 flex items-center justify-center overflow-hidden transition-transform hover:scale-105 bg-white rounded-full shadow-lg border-2 border-white/20">
+        <Link href="/" className="relative w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-md overflow-hidden transition-transform hover:scale-105">
           {logo && (
             <Image 
               src={logo.imageUrl} 
               alt="NEU Logo" 
               fill
-              className="object-contain p-1"
+              className="object-contain p-1.5"
               data-ai-hint={logo.imageHint}
               priority
             />
           )}
         </Link>
-        <div className="flex flex-col -space-y-1 text-left">
-          <h1 className="font-bold text-xl md:text-2xl tracking-tight text-[#FFD600] uppercase">NEU Library</h1>
-          <div className="flex items-center gap-2">
-            <span className={cn(
-              "text-[10px] font-black tracking-[0.2em] uppercase px-2 py-0.5 rounded",
-              isAdminPath ? "bg-accent text-accent-foreground" : "bg-white/20 text-white"
-            )}>
-              {isAdminPath ? "Admin Portal" : "Student Portal"}
-            </span>
-          </div>
+        <div className="flex flex-col -space-y-1">
+          <h1 className="font-bold text-xl md:text-2xl tracking-tight text-accent uppercase">NEU Library</h1>
+          <p className="text-[10px] font-black tracking-[0.2em] uppercase text-white/70">Knowledge & Service</p>
         </div>
       </div>
 
       <div className="flex items-center gap-4">
         {isMounted && user ? (
           <div className="flex items-center gap-4">
-            {/* Context Switcher for Staff */}
             {userRole === "Library Staff" && (
               <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2" suppressHydrationWarning>
                 <Link href={isAdminPath ? "/" : "/admin/dashboard"}>
@@ -85,11 +77,8 @@ export function SiteHeader() {
             )}
 
             <div className="hidden md:flex flex-col items-end -space-y-1">
-              <span className="text-sm font-bold text-[#FFD600]">{user.displayName || "Member"}</span>
-              <span className={cn(
-                "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest mt-1",
-                userRole === "Library Staff" ? "bg-accent/20 text-accent border border-accent/30" : "bg-white/10 text-white/70"
-              )}>
+              <span className="text-sm font-bold text-accent">{user.displayName || "Member"}</span>
+              <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest mt-1 bg-white/10 text-white/70 border border-white/10">
                 {userRole}
               </span>
             </div>
@@ -112,21 +101,11 @@ export function SiteHeader() {
           </div>
         ) : isMounted ? (
           <div className="flex items-center gap-3">
-            {isAdminPath ? (
-              <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm" suppressHydrationWarning>
-                <Link href="/">
-                  <ArrowRightLeft className="w-4 h-4" />
-                  Student Portal
+             <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm" suppressHydrationWarning>
+                <Link href={isAdminPath ? "/" : "/admin/login"}>
+                  {isAdminPath ? "Visitor Portal" : "Admin Portal"}
                 </Link>
-              </Button>
-            ) : (
-              <Button asChild variant="outline" className="bg-[#3D5C4E] border-none text-white hover:bg-[#324B40] gap-2 rounded-full px-6 font-bold uppercase text-[10px] tracking-widest h-10 shadow-md" suppressHydrationWarning>
-                <Link href="/admin/login">
-                  <ShieldCheck className="w-4 h-4" />
-                  ADMIN LOGIN
-                </Link>
-              </Button>
-            )}
+             </Button>
           </div>
         ) : null}
       </div>

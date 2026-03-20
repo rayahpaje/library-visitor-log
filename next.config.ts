@@ -39,6 +39,12 @@ const nextConfig: NextConfig = {
         hostname: 'scontent.fmnl4-2.fna.fbcdn.net',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.manilatimes.net',
+        port: '',
+        pathname: '/**',
       }
     ],
   },

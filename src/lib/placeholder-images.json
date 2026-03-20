@@ -1,16 +1,16 @@
 {
   "placeholderImages": [
     {
-      "id": "library-hero",
-      "description": "A modern library interior with tall bookshelves and study areas",
-      "imageUrl": "https://picsum.photos/seed/neu-library/1200/800",
-      "imageHint": "library interior"
+      "id": "neu-campus-bg",
+      "description": "New Era University Campus Background",
+      "imageUrl": "https://www.manilatimes.net/manilatimes/uploads/images/2021/10/07/19096.jpg",
+      "imageHint": "university campus"
     },
     {
       "id": "neu-logo",
-      "description": "Official NEU Library Logo",
-      "imageUrl": "https://scontent.fmnl4-2.fna.fbcdn.net/v/t39.30808-6/542756850_809668284739029_3390195360873739253_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=1d70fc&_nc_eui2=AeFA6OHTHsMaM8cDF6qDfJGTYRGRbzgXsXthEZFvOBexe-Y2VXadMky3ISVh5CIAsu2SB5Zpv-jXF-w4WSN84DvN&_nc_ohc=B29Tszt8xM4Q7kNvwGqXVvZ&_nc_oc=AdrNqAY_tL70femMZU_U7_OrZugDcnT6JTFT0W2DKrM-WnVN40On9deICyrKRP6FZpdzT5sqDbIXx79Gz7nQUtAy&_nc_zt=23&_nc_ht=scontent.fmnl4-2.fna&_nc_gid=y7YGfJh-CkBxmAg4wln3RA&_nc_ss=7a30f&oh=00_AfzSI78WBaa85P26qygXI1OPHh1C1cneAJzALRMXyZx7PA&oe=69C29F4B",
-      "imageHint": "library logo"
+      "description": "Official NEU Seal",
+      "imageUrl": "https://upload.wikimedia.org/wikipedia/en/thumb/5/5e/New_Era_University_seal.svg/512px-New_Era_University_seal.svg.png",
+      "imageHint": "university seal"
     }
   ]
 }
