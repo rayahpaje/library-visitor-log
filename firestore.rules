@@ -23,7 +23,7 @@ service cloud.firestore {
     match /visitors/{visitorId} {
       // Allow library staff to view all logs
       allow get, list: if isSignedIn();
-      // Allow the public portal to create new logs
+      // Allow the public portal to create new logs - Essential for kiosk systems
       allow create: if true;
       // Only staff can update or delete entry records
       allow update, delete: if isSignedIn();

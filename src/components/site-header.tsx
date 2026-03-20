@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -11,7 +11,6 @@ import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import { useMemo, useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -19,7 +18,6 @@ export function SiteHeader() {
   const { user } = useUser();
   const auth = useAuth();
   const [isMounted, setIsMounted] = useState(false);
-  const isHome = pathname === "/";
   const logo = PlaceHolderImages.find(img => img.id === "neu-logo");
 
   useEffect(() => {
@@ -45,7 +43,7 @@ export function SiteHeader() {
 
   return (
     <header className="bg-primary text-white py-4 px-6 md:px-10 flex items-center h-24 shadow-lg z-50 sticky top-0" suppressHydrationWarning>
-      {/* Left Spacer */}
+      {/* Left Spacer - ensures branding stays centered */}
       <div className="flex-1 flex justify-start" />
 
       {/* Center Branding */}
@@ -72,19 +70,10 @@ export function SiteHeader() {
 
       {/* Right Side Actions */}
       <div className="flex-1 flex justify-end items-center gap-4">
-        {isMounted && !isHome && (
-          <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm transition-all">
-            <Link href="/">
-              <UserIcon className="w-4 h-4" />
-              Student Portal
-            </Link>
-          </Button>
-        )}
-
         {isMounted && user ? (
           <div className="flex items-center gap-4">
             <div className="hidden md:flex flex-col items-end -space-y-1">
-              <span className="text-sm font-black text-accent">{user.displayName || "Member"}</span>
+              <span className="text-sm font-black text-accent text-right">{user.displayName || "Member"}</span>
               <span className="text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest mt-1 bg-white/10 text-white/70 border border-white/10">
                 {userRole}
               </span>
