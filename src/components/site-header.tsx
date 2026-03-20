@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { LogOut, ShieldCheck, LogIn, LayoutDashboard, UserCircle } from "lucide-react";
+import { LogOut, ShieldCheck, LogIn, LayoutDashboard, UserCircle, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -78,8 +78,8 @@ export function SiteHeader() {
             {userRole === "Library Staff" && (
               <Button asChild variant="outline" className="hidden md:flex bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2" suppressHydrationWarning>
                 <Link href={isAdminPath ? "/" : "/admin/dashboard"}>
-                  {isAdminPath ? <UserCircle className="w-3.5 h-3.5" /> : <LayoutDashboard className="w-3.5 h-3.5" />}
-                  {isAdminPath ? "Visitor Portal" : "Admin Portal"}
+                  {isAdminPath ? <ArrowRightLeft className="w-3.5 h-3.5" /> : <LayoutDashboard className="w-3.5 h-3.5" />}
+                  {isAdminPath ? "Go to Visitor Portal" : "Go to Admin Portal"}
                 </Link>
               </Button>
             )}
