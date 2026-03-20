@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
@@ -12,8 +13,7 @@ import {
   FileText,
   ShieldCheck,
   User as UserIcon,
-  BadgeCheck,
-  ArrowRightLeft
+  BadgeCheck
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -194,12 +194,6 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex flex-col items-end gap-3 text-right relative z-10">
-              <Button asChild variant="outline" className="border-primary/20 text-primary hover:bg-primary/5 h-10 px-6 font-bold uppercase tracking-widest text-[10px] rounded-full shadow-sm gap-2" suppressHydrationWarning>
-                <Link href="/">
-                  <ArrowRightLeft className="w-4 h-4" />
-                  Switch to Student Portal
-                </Link>
-              </Button>
               <div className="flex items-center gap-2 text-primary/40">
                 <ShieldCheck className="w-5 h-5" />
                 <span className="text-[10px] font-bold uppercase tracking-tight">Verified Administrative Identity</span>
