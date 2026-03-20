@@ -1,44 +1,254 @@
-
 {
   "entities": {
     "Visitor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Visitor",
-      "description": "A record of a library visitor's entry.",
       "type": "object",
+      "description": "Represents a person visiting the library, identified by their institutional details.",
       "properties": {
-        "name": { "type": "string" },
-        "institutionalId": { "type": "string" },
-        "college": { "type": "string" },
-        "purpose": { "type": "string" },
-        "timeIn": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["Active", "Logged Out"] }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Visitor entity."
+        },
+        "institutionalIdNumber": {
+          "type": "string",
+          "description": "The unique identification number assigned to the visitor by their institution (e.g., student ID, employee ID)."
+        },
+        "institutionalEmail": {
+          "type": "string",
+          "description": "The official institutional email address of the visitor, used for sign-in.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the visitor."
+        },
+        "collegeOffice": {
+          "type": "string",
+          "description": "The college or administrative office the visitor is associated with."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the visitor's record was first created in the system.",
+          "format": "date-time"
+        }
       },
-      "required": ["name", "institutionalId", "purpose", "timeIn", "status"]
+      "required": [
+        "id",
+        "institutionalIdNumber",
+        "institutionalEmail",
+        "name",
+        "collegeOffice",
+        "createdAt"
+      ]
     },
-    "BlockedUser": {
-      "title": "Blocked User",
-      "description": "An individual restricted from entering the library.",
+    "VisitLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "VisitLog",
       "type": "object",
+      "description": "Records details of a single visit by a visitor to the library, including sign-in and sign-out times and purpose.",
       "properties": {
-        "name": { "type": "string" },
-        "institutionalId": { "type": "string" },
-        "reason": { "type": "string" },
-        "dateBlocked": { "type": "string", "format": "date" }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the VisitLog entity."
+        },
+        "visitorId": {
+          "type": "string",
+          "description": "Reference to the Visitor who made this visit. (Relationship: Visitor 1:N VisitLog)"
+        },
+        "timeIn": {
+          "type": "string",
+          "description": "Timestamp when the visitor signed in.",
+          "format": "date-time"
+        },
+        "timeOut": {
+          "type": "string",
+          "description": "Optional timestamp when the visitor signed out. This property is null if the session is still active.",
+          "format": "date-time"
+        },
+        "purpose": {
+          "type": "string",
+          "description": "The stated purpose of the visitor's visit to the library, potentially aided by AI suggestions."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the visit (e.g., 'Active', 'Completed', 'Canceled', 'Blocked Entry')."
+        }
       },
-      "required": ["name", "institutionalId", "reason", "dateBlocked"]
+      "required": [
+        "id",
+        "visitorId",
+        "timeIn",
+        "purpose",
+        "status"
+      ]
+    },
+    "AdminUser": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminUser",
+      "type": "object",
+      "description": "Represents an administrative user with secure access to manage visitor logs and system settings, authenticated via Google Login.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AdminUser entity."
+        },
+        "googleId": {
+          "type": "string",
+          "description": "The unique identifier provided by Google for the authenticated admin user via Google Login."
+        },
+        "email": {
+          "type": "string",
+          "description": "The institutional email address of the administrator, primarily used for identification and Google Login.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the administrator."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role assigned to the administrator within the system (e.g., 'Admin', 'SuperAdmin')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the admin user's record was first created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "googleId",
+        "email",
+        "name",
+        "role",
+        "createdAt"
+      ]
+    },
+    "BlockedVisitor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BlockedVisitor",
+      "type": "object",
+      "description": "Records visitors who are blocked from entering the library, detailing the reason, blocking administration, and status.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the BlockedVisitor entity."
+        },
+        "visitorId": {
+          "type": "string",
+          "description": "Reference to the Visitor who is blocked. (Relationship: Visitor 1:N BlockedVisitor)"
+        },
+        "blockedByAdminId": {
+          "type": "string",
+          "description": "Reference to the AdminUser who initiated the block. (Relationship: AdminUser 1:N BlockedVisitor)"
+        },
+        "reason": {
+          "type": "string",
+          "description": "The detailed reason or justification for blocking the visitor."
+        },
+        "blockedAt": {
+          "type": "string",
+          "description": "Timestamp when the visitor was added to the block list.",
+          "format": "date-time"
+        },
+        "unblockedAt": {
+          "type": "string",
+          "description": "Optional timestamp when the visitor was removed from the block list, if applicable.",
+          "format": "date-time"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Boolean indicating if the block is currently active (true) or has been lifted (false)."
+        }
+      },
+      "required": [
+        "id",
+        "visitorId",
+        "blockedByAdminId",
+        "reason",
+        "blockedAt",
+        "isActive"
+      ]
     }
   },
   "auth": {
-    "providers": ["password"]
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
-    "/visitors/{visitorId}": {
-      "schema": "#/backend/entities/Visitor",
-      "description": "Collection of all visitor entry logs."
-    },
-    "/blockList/{blockId}": {
-      "schema": "#/backend/entities/BlockedUser",
-      "description": "Collection of restricted individuals."
-    }
+    "structure": [
+      {
+        "path": "/admin_users/{adminId}",
+        "definition": {
+          "entityName": "AdminUser",
+          "schema": {
+            "$ref": "#/backend/entities/AdminUser"
+          },
+          "description": "Stores administrator user profiles. Each document ID is the Google UID of the authenticated administrator for direct authorization checks. This collection defines who has administrative access to the system.",
+          "params": [
+            {
+              "name": "adminId",
+              "description": "The unique Firebase Authentication UID (Google ID) of the administrator."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/visitors/{visitorId}",
+        "definition": {
+          "entityName": "Visitor",
+          "schema": {
+            "$ref": "#/backend/entities/Visitor"
+          },
+          "description": "Contains detailed profiles for all library visitors. Only administrators can read, create, update, or delete visitor records. Visitor sign-in is managed by server-side logic (e.g., Cloud Functions) interacting with this collection.",
+          "params": [
+            {
+              "name": "visitorId",
+              "description": "The unique identifier for a visitor."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/visitors/{visitorId}/visit_logs/{visitLogId}",
+        "definition": {
+          "entityName": "VisitLog",
+          "schema": {
+            "$ref": "#/backend/entities/VisitLog"
+          },
+          "description": "Records individual visit sessions for each visitor. This subcollection uses a hierarchical path to clearly associate visit logs with their respective visitors. Access is restricted to administrators. Includes denormalized 'visitorId' for authorization clarity.",
+          "params": [
+            {
+              "name": "visitorId",
+              "description": "The unique identifier of the parent visitor."
+            },
+            {
+              "name": "visitLogId",
+              "description": "The unique identifier for a specific visit log entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/blocked_visitors/{blockedVisitorId}",
+        "definition": {
+          "entityName": "BlockedVisitor",
+          "schema": {
+            "$ref": "#/backend/entities/BlockedVisitor"
+          },
+          "description": "Manages a list of visitors who are blocked from entering the library. Access is restricted to administrators for managing entries and querying status. Each document includes denormalized 'visitorId' and 'blockedByAdminId' to ensure authorization independence when checking block status.",
+          "params": [
+            {
+              "name": "blockedVisitorId",
+              "description": "The unique identifier for a blocked visitor record."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to be secure, scalable, and easily debuggable, prioritizing authorization independence and clear access patterns. Authorization context is denormalized to avoid get() calls in security rules. For example, administrative roles are determined by the existence of a document in the /admin_users/{adminId} collection, where adminId is the request.auth.uid. This allows for direct, atomic checks (exists(...)) rather than expensive and complex hierarchical lookups. For VisitLog entries, while they are nested under /visitors/{visitorId}/visit_logs/{visitLogId}, the primary authorization is that only administrators can access them. The visitorId is also explicitly stored within the VisitLog document, reinforcing its ownership without needing to get() the parent Visitor document. Similarly, the BlockedVisitor entity includes visitorId and blockedByAdminId directly, ensuring that rules can evaluate blocking status and origin without complex queries. The structure ensures that list operations (queries) are secure and efficient. The /admin_users collection is primarily for direct get operations using request.auth.uid to establish admin status. Listing is not a primary requirement for this collection's authorization purpose. The /visitors collection contains all visitor profiles. Access is restricted to authenticated administrators. Administrators can securely list and filter all visitors as needed for dashboard and activity log features. The /visitors/{visitorId}/visit_logs subcollection contains all visit records for a specific visitor. Access is restricted to authenticated administrators. Administrators can securely list and filter visit_logs for any visitorId, or use collection group queries to analyze all visit_logs across all visitors, applying filters like status or timeIn for statistics. The /blocked_visitors collection contains records of all blocked visitors. Access is restricted to authenticated administrators. Administrators can securely list and manage this collection. The data needed for checking if a visitor is blocked (e.g., visitorId, isActive) is present in each document, allowing efficient queries for blocking status without relying on parent documents or complex joins. Data is segregated by security posture. All documents in /admin_users share the same security need (admin access). All documents in /visitors and their subcollections /visit_logs are managed by admins. The BlockedVisitor collection is a separate top-level collection due to its distinct function (a global list of blocked individuals), ensuring a homogeneous security posture for all documents within it. Path-based ownership is utilized for VisitLog documents, clearly linking them to their respective Visitor."
   }
 }

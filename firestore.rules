@@ -1,0 +1,126 @@
+/**
+ * Firestore Security Rules
+ * 
+ * CORE PHILOSOPHY:
+ * This ruleset implements a strict Administrative Access Control model. The system is designed 
+ * for a library management context where only authenticated administrators (verified via 
+ * Google Login) have the authority to manage visitor profiles, visit logs, and block lists.
+ * 
+ * DATA STRUCTURE:
+ * - /admin_users/{adminId}: Root collection for administrative profiles. UID-based for fast lookup.
+ * - /visitors/{visitorId}: Root collection for visitor identity data.
+ * - /visitors/{visitorId}/visit_logs/{visitLogId}: Subcollection tracking specific visits.
+ * - /blocked_visitors/{blockedVisitorId}: Global list of restricted individuals.
+ * 
+ * KEY SECURITY DECISIONS:
+ * 1. Admin-Centric Security: Authorization is predicated on the existence of a document 
+ *    in the 'admin_users' collection matching the 'request.auth.uid'.
+ * 2. Denormalization for Authorization: Critical IDs (like visitorId and adminId) are 
+ *    required inside document bodies to ensure rules can validate relational integrity 
+ *    without complex joins or multiple 'get()' calls.
+ * 3. Prototyping Flexibility: While access is strictly limited to Admins, the internal 
+ *    schema of records is not strictly typed to allow for rapid UI/feature iteration.
+ * 4. Explicit Denials: All non-admin access is explicitly denied across all collections.
+ */
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- GLOBAL HELPER FUNCTIONS ---
+
+    /**
+     * @description Checks if the user is authenticated with Firebase.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Determines if the authenticated user has administrative privileges.
+     * Administrative status is determined by the existence of a profile in the admin_users collection.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admin_users/$(request.auth.uid));
+    }
+
+    /**
+     * @description Verifies ownership of a specific admin record or if the caller is an admin.
+     */
+    function isOwnerOrAdmin(userId) {
+      return isSignedIn() && (request.auth.uid == userId || isAdmin());
+    }
+
+    /**
+     * @description Helper to ensure a document exists before modification or deletion.
+     */
+    function isExistingAdmin() {
+      return isAdmin() && resource != null;
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Administrative user profiles. Controls who can access the system.
+     * @path /admin_users/{adminId}
+     * @allow (get) Admin viewing their own profile or an admin looking up another admin.
+     * @deny (create) Unauthenticated users attempting to register themselves as admins.
+     * @principle Verified identity via UID-path matching and exists() check for role validation.
+     */
+    match /admin_users/{adminId} {
+      allow get: if isOwnerOrAdmin(adminId);
+      allow list: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.id == adminId;
+      allow update: if isExistingAdmin() && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Visitor identity records.
+     * @path /visitors/{visitorId}
+     * @allow (list) An administrator viewing the visitor dashboard.
+     * @deny (get) A visitor trying to read their own data (access is admin-only).
+     * @principle Strict administrative-only access for PII (Personally Identifiable Information).
+     */
+    match /visitors/{visitorId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.id == visitorId;
+      allow update: if isExistingAdmin() && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingAdmin();
+    }
+
+    /**
+     * @description Detailed logs for library visits.
+     * @path /visitors/{visitorId}/visit_logs/{visitLogId}
+     * @allow (create) An administrator signing a visitor in.
+     * @deny (update) Changing the visitorId associated with a log entry.
+     * @principle Relational integrity enforcement between path and document data.
+     */
+    match /visitors/{visitorId}/visit_logs/{visitLogId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.visitorId == visitorId;
+      allow update: if isExistingAdmin() && request.resource.data.visitorId == resource.data.visitorId;
+      allow delete: if isExistingAdmin();
+    }
+
+    /**
+     * @description Global list of blocked visitors.
+     * @path /blocked_visitors/{blockedVisitorId}
+     * @allow (create) Admin adding a visitor to the block list.
+     * @deny (delete) Deletion by anyone who is not an authenticated administrator.
+     * @principle Owner attribution for auditing (blockedByAdminId must match auth UID).
+     */
+    match /blocked_visitors/{blockedVisitorId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.blockedByAdminId == request.auth.uid;
+      allow update: if isExistingAdmin() && request.resource.data.blockedByAdminId == resource.data.blockedByAdminId;
+      allow delete: if isExistingAdmin();
+    }
+
+    // --- DEFAULT DENY ---
+    // Explicitly deny any access to any other paths or unspecified methods.
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
