@@ -11,6 +11,7 @@ import {
   Monitor,
   Search,
   FileText,
+  User as UserIcon
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { useCollection, useFirestore } from "@/firebase";
+import { useCollection, useFirestore, useUser } from "@/firebase";
 import { 
   collection, 
   addDoc, 
@@ -40,9 +41,11 @@ import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
 import { toast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function AdminDashboard() {
   const db = useFirestore();
+  const { user } = useUser();
   const [searchTerm, setSearchTerm] = useState("");
   const [isMounted, setIsMounted] = useState(false);
   const [unblockedIds, setUnblockedIds] = useState<string[]>([]);
@@ -145,6 +148,27 @@ export default function AdminDashboard() {
       <SiteHeader />
       
       <main className="flex-1 p-8 max-w-[1400px] mx-auto w-full space-y-8">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-[#004D40]">Dashboard Overview</h2>
+            <p className="text-sm text-muted-foreground font-medium">Monitoring library attendance and security</p>
+          </div>
+          {user && (
+            <div className="flex items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-black/5">
+              <Avatar className="h-10 w-10 border-2 border-primary/10">
+                <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "Admin"} />
+                <AvatarFallback className="bg-primary/5 text-primary font-bold">
+                  {user.displayName?.charAt(0) || "A"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col -space-y-1">
+                <span className="text-sm font-bold text-black">{user.displayName || "Administrator"}</span>
+                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Library Staff</span>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="border-none shadow-[0_4px_10px_rgba(0,0,0,0.05)] rounded-xl bg-white overflow-hidden">
             <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
