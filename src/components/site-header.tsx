@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useUser, useAuth } from "@/firebase";
-import { signOut, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import { useMemo, useState, useEffect } from "react";
@@ -40,17 +40,6 @@ export function SiteHeader() {
       router.push("/");
     } catch (error) {
       toast({ variant: "destructive", title: "Logout Error", description: "Failed to sign out." });
-    }
-  };
-
-  const handleLogin = async () => {
-    if (!auth) return;
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      toast({ title: "Welcome!", description: "Successfully authenticated." });
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Login Error", description: err.message });
     }
   };
 
@@ -120,16 +109,6 @@ export function SiteHeader() {
           </div>
         ) : isMounted ? (
           <div className="flex items-center gap-3">
-             <Button 
-              onClick={handleLogin}
-              variant="outline" 
-              className="bg-white border-none text-primary hover:bg-white/90 gap-2 rounded-full px-6 font-bold uppercase text-[10px] tracking-widest h-10 shadow-md"
-              suppressHydrationWarning
-            >
-              <LogIn className="w-4 h-4" />
-              SIGN IN
-            </Button>
-            
             {!isAdminPath && (
               <Button asChild variant="outline" className="bg-[#3D5C4E] border-none text-white hover:bg-[#324B40] gap-2 rounded-full px-6 font-bold uppercase text-[10px] tracking-widest h-10 shadow-md" suppressHydrationWarning>
                 <Link href="/admin/login">
