@@ -74,12 +74,12 @@ export function SiteHeader() {
       <div className="flex items-center gap-4">
         {isMounted && user ? (
           <div className="flex items-center gap-4">
-            {/* Context Switcher for Staff */}
+            {/* Context Switcher for Staff - Explicitly show switch back to Visitor Portal */}
             {userRole === "Library Staff" && (
-              <Button asChild variant="outline" className="hidden md:flex bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2" suppressHydrationWarning>
+              <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2" suppressHydrationWarning>
                 <Link href={isAdminPath ? "/" : "/admin/dashboard"}>
                   {isAdminPath ? <ArrowRightLeft className="w-3.5 h-3.5" /> : <LayoutDashboard className="w-3.5 h-3.5" />}
-                  {isAdminPath ? "Go to Visitor Portal" : "Go to Admin Portal"}
+                  {isAdminPath ? "Switch to Visitor Portal" : "Switch to Admin Portal"}
                 </Link>
               </Button>
             )}

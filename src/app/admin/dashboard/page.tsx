@@ -93,7 +93,6 @@ export default function AdminDashboard() {
     ).slice(0, 10);
   }, [allVisitors, searchTerm]);
 
-  // Role Detection Logic
   const userRole = useMemo(() => {
     if (!user) return "Guest";
     if (user.email?.endsWith("@neu.edu.ph")) return "Library Staff";
@@ -158,7 +157,7 @@ export default function AdminDashboard() {
       <SiteHeader />
       
       <main className="flex-1 p-8 max-w-[1400px] mx-auto w-full space-y-8">
-        {/* User Identity Section */}
+        {/* User Identity Section - Prominent details and role */}
         {isMounted && user ? (
           <div className="bg-white border border-black/5 shadow-sm rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl -z-0" />
@@ -198,12 +197,12 @@ export default function AdminDashboard() {
               <Button asChild variant="outline" className="border-primary/20 text-primary hover:bg-primary/5 h-10 px-6 font-bold uppercase tracking-widest text-[10px] rounded-full shadow-sm gap-2" suppressHydrationWarning>
                 <Link href="/">
                   <ArrowRightLeft className="w-4 h-4" />
-                  Go to Visitor Portal
+                  Switch to Visitor Portal
                 </Link>
               </Button>
               <div className="flex items-center gap-2 text-primary/40">
                 <ShieldCheck className="w-5 h-5" />
-                <span className="text-[10px] font-bold uppercase tracking-tight">Verified by NEU Auth</span>
+                <span className="text-[10px] font-bold uppercase tracking-tight">Verified Staff Identity</span>
               </div>
             </div>
           </div>
@@ -226,13 +225,13 @@ export default function AdminDashboard() {
                   {userRole === "Library Staff" ? "Admin Operations" : "Attendance Dashboard"}
                 </h2>
                 <p className="text-sm text-muted-foreground font-medium italic">
-                  {userRole === "Library Staff" ? "Real-time monitoring and security management" : "Your recent library visitation logs"}
+                  Real-time monitoring and security management
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden">
+              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden" suppressHydrationWarning>
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-black/80">
                     <Users className="w-5 h-5" />
@@ -242,7 +241,7 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden">
+              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden" suppressHydrationWarning>
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-black/80">
                     <TrendingUp className="w-5 h-5 text-green-600" />
@@ -252,7 +251,7 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden">
+              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden" suppressHydrationWarning>
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-destructive">
                     <Ban className="w-5 h-5" />
@@ -262,7 +261,7 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden">
+              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden" suppressHydrationWarning>
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-primary">
                     <Monitor className="w-5 h-5" />
