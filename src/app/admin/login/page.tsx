@@ -1,11 +1,12 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle, Info, ShieldAlert } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
-import { useAuth } from "@/firebase";
+import { useAuth, useUser } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -15,30 +16,40 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 export default function AdminLogin() {
   const router = useRouter();
   const auth = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const { user, isUserLoading } = useUser();
+  const [isSigningIn, setIsSigningIn] = useState(false);
   const [errorType, setErrorType] = useState<"config" | "other" | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const bgImage = PlaceHolderImages.find(img => img.id === "neu-campus-bg");
 
+  // Real-time redirect: if a user is already logged in, send them to the dashboard immediately
+  useEffect(() => {
+    if (user && !isSigningIn) {
+      router.push("/admin/dashboard");
+    }
+  }, [user, router, isSigningIn]);
+
   const handleGoogleLogin = async () => {
     if (!auth) return;
-    setIsLoading(true);
+    setIsSigningIn(true);
     setErrorType(null);
     setErrorMessage("");
     
     const provider = new GoogleAuthProvider();
+    // Prompt the user to select an account to ensure a fresh session
+    provider.setCustomParameters({ prompt: 'select_account' });
     
     try {
       await signInWithPopup(auth, provider);
+      // The useEffect above will handle the redirect once the user state updates
       toast({ 
         title: "Access Granted", 
         description: "Welcome to NEU Library." 
       });
-      router.push("/admin/dashboard");
     } catch (err: any) {
       // Gracefully handle if the user closes the popup manually
       if (err.code === 'auth/popup-closed-by-user') {
-        setIsLoading(false);
+        setIsSigningIn(false);
         return;
       }
       
@@ -56,8 +67,7 @@ export default function AdminLogin() {
           description: err.message || "An error occurred." 
         });
       }
-    } finally {
-      setIsLoading(false);
+      setIsSigningIn(false);
     }
   };
 
@@ -91,41 +101,45 @@ export default function AdminLogin() {
             <p className="text-white/70 text-xs font-bold uppercase tracking-[0.2em]">Restricted Access Area</p>
           </div>
 
-          {errorType === "config" && (
-            <Alert className="mb-8 text-left bg-blue-50/10 text-white border-blue-200/20 backdrop-blur-md">
-              <div className="flex items-center gap-3">
-                <Info className="h-5 w-5 text-accent" />
-                <AlertTitle className="font-bold text-sm">Action Required</AlertTitle>
-              </div>
-              <AlertDescription className="text-xs mt-1 leading-relaxed text-white/80">
-                Please enable Google Sign-In in your Firebase Console.
-              </AlertDescription>
-            </Alert>
+          {(isUserLoading || isSigningIn) && (
+            <div className="flex flex-col items-center justify-center py-6 space-y-4">
+              <Loader2 className="w-8 h-8 animate-spin text-accent" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/60">Authenticating System...</p>
+            </div>
           )}
 
-          {errorType === "other" && (
-            <Alert variant="destructive" className="mb-8 text-left bg-red-50/10 text-white border-red-200/20">
-              <div className="flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-destructive" />
-                <AlertTitle className="font-bold text-sm">Authentication Error</AlertTitle>
-              </div>
-              <AlertDescription className="text-xs mt-1">
-                {errorMessage}
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          <div className="flex flex-col items-center space-y-6">
-            <Button 
-              onClick={handleGoogleLogin}
-              className="w-full h-14 bg-white hover:bg-white/90 text-primary font-bold rounded-xl shadow-2xl transition-all flex items-center justify-center gap-3 border-none group" 
-              disabled={isLoading}
-              suppressHydrationWarning
-            >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
+          {!isUserLoading && !isSigningIn && (
+            <>
+              {errorType === "config" && (
+                <Alert className="mb-8 text-left bg-blue-50/10 text-white border-blue-200/20 backdrop-blur-md">
+                  <div className="flex items-center gap-3">
+                    <Info className="h-5 w-5 text-accent" />
+                    <AlertTitle className="font-bold text-sm">Action Required</AlertTitle>
+                  </div>
+                  <AlertDescription className="text-xs mt-1 leading-relaxed text-white/80">
+                    Please ensure Google Sign-In is enabled in your Firebase Console and this domain is authorized.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {errorType === "other" && (
+                <Alert variant="destructive" className="mb-8 text-left bg-red-50/10 text-white border-red-200/20">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="h-5 w-5 text-destructive" />
+                    <AlertTitle className="font-bold text-sm">Authentication Error</AlertTitle>
+                  </div>
+                  <AlertDescription className="text-xs mt-1">
+                    {errorMessage}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="flex flex-col items-center space-y-6">
+                <Button 
+                  onClick={handleGoogleLogin}
+                  className="w-full h-14 bg-white hover:bg-white/90 text-primary font-bold rounded-xl shadow-2xl transition-all flex items-center justify-center gap-3 border-none group" 
+                  suppressHydrationWarning
+                >
                   <svg className="w-5 h-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
@@ -145,19 +159,19 @@ export default function AdminLogin() {
                     />
                   </svg>
                   <span className="uppercase tracking-widest text-xs">Staff Login</span>
-                </>
-              )}
-            </Button>
+                </Button>
 
-            <div className="pt-6 border-t border-white/10 w-full">
-              <p className="text-accent text-[11px] font-black uppercase tracking-[0.25em] mb-2">
-                Protected System
-              </p>
-              <p className="text-white/60 text-[9px] font-bold uppercase tracking-widest leading-relaxed">
-                Use official NEU credentials only. Unauthorized access is recorded.
-              </p>
-            </div>
-          </div>
+                <div className="pt-6 border-t border-white/10 w-full">
+                  <p className="text-accent text-[11px] font-black uppercase tracking-[0.25em] mb-2">
+                    Protected System
+                  </p>
+                  <p className="text-white/60 text-[9px] font-bold uppercase tracking-widest leading-relaxed">
+                    Use official NEU credentials only. If the popup doesn't appear, please check your browser settings.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </main>
 
