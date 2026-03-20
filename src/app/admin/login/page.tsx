@@ -1,10 +1,9 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle, Info, ShieldAlert } from "lucide-react";
+import { Loader2, AlertCircle, Info, ShieldAlert, ArrowLeft } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { useAuth, useUser } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
@@ -12,11 +11,12 @@ import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import Link from "next/link";
 
 export default function AdminLogin() {
   const router = useRouter();
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { user, loading: isUserLoading } = useUser();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [errorType, setErrorType] = useState<"config" | "other" | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -36,18 +36,15 @@ export default function AdminLogin() {
     setErrorMessage("");
     
     const provider = new GoogleAuthProvider();
-    // Prompt the user to select an account to ensure a fresh session
     provider.setCustomParameters({ prompt: 'select_account' });
     
     try {
       await signInWithPopup(auth, provider);
-      // The useEffect above will handle the redirect once the user state updates
       toast({ 
         title: "Access Granted", 
-        description: "Welcome to NEU Library." 
+        description: "Welcome to NEU Library Admin Portal." 
       });
     } catch (err: any) {
-      // Gracefully handle if the user closes the popup manually
       if (err.code === 'auth/popup-closed-by-user') {
         setIsSigningIn(false);
         return;
@@ -160,6 +157,11 @@ export default function AdminLogin() {
                   </svg>
                   <span className="uppercase tracking-widest text-xs">Staff Login</span>
                 </Button>
+
+                <Link href="/" className="inline-flex items-center gap-2 text-white/60 hover:text-white text-[10px] font-bold uppercase tracking-widest transition-colors group">
+                  <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
+                  Back to Student Portal
+                </Link>
 
                 <div className="pt-6 border-t border-white/10 w-full">
                   <p className="text-accent text-[11px] font-black uppercase tracking-[0.25em] mb-2">

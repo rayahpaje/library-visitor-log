@@ -1,9 +1,11 @@
-
 'use client';
 
 import Link from "next/link";
-import { LogOut, LayoutDashboard, Home } from "lucide-material"; // Note: User specified lucide-react, I will use Home icon
-import { LogOut as LogOutIcon, LayoutDashboard as DashboardIcon, Home as HomeIcon } from "lucide-react";
+import { 
+  LogOut as LogOutIcon, 
+  LayoutDashboard as DashboardIcon, 
+  Home as HomeIcon 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
