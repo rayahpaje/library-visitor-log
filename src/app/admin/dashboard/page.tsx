@@ -262,9 +262,14 @@ export default function AdminDashboard() {
           <div className="bg-white border border-black/5 shadow-sm rounded-2xl p-12 text-center">
              <h3 className="text-xl font-bold text-primary mb-2">Staff Access Only</h3>
              <p className="text-muted-foreground mb-6">Please sign in to view administrative data.</p>
-             <Button className="rounded-full px-8 bg-primary font-bold uppercase tracking-widest text-xs h-11" asChild>
-                <Link href="/admin/login">Log In</Link>
-             </Button>
+             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Button className="rounded-full px-8 bg-primary font-bold uppercase tracking-widest text-xs h-11" asChild>
+                    <Link href="/admin/login">Log In</Link>
+                </Button>
+                <Button variant="ghost" className="rounded-full font-bold uppercase tracking-widest text-xs text-muted-foreground" asChild>
+                    <Link href="/">Back to Student Portal</Link>
+                </Button>
+             </div>
           </div>
         )}
 
@@ -278,7 +283,7 @@ export default function AdminDashboard() {
               Your account (<strong>{user.email}</strong>) is identified as a Student. Access to the administrative dashboard is reserved for authorized Library Staff only.
             </p>
             <Button variant="outline" className="mt-4 rounded-full font-bold uppercase text-xs" asChild>
-              <Link href="/">Back to Entry Portal</Link>
+              <Link href="/">Back to Student Portal</Link>
             </Button>
           </Card>
         )}
