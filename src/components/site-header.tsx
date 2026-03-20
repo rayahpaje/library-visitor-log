@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { LogOut, LayoutDashboard } from "lucide-react";
+import { LogOut, LayoutDashboard, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -76,7 +76,7 @@ export function SiteHeader() {
       {/* Right Side Actions */}
       <div className="flex items-center gap-4">
         {isMounted && user ? (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
             <div className="hidden md:flex flex-col items-end -space-y-1">
               <span className="text-sm font-black text-accent text-right">{user.displayName || "Member"}</span>
               <span className="text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest mt-1 bg-white/10 text-white/70 border border-white/10">
@@ -91,21 +91,36 @@ export function SiteHeader() {
               </AvatarFallback>
             </Avatar>
 
-            {isAuthorized && !pathname.includes("/admin") && (
-              <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-4 font-bold uppercase text-[10px] tracking-widest gap-2">
-                <Link href="/admin/dashboard">
-                  <LayoutDashboard className="w-4 h-4" />
-                </Link>
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Back to Student Portal Link */}
+              {pathname.includes("/admin") && (
+                <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-4 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm">
+                  <Link href="/">
+                    <User className="w-4 h-4" />
+                    <span className="hidden sm:inline">Student Portal</span>
+                  </Link>
+                </Button>
+              )}
 
-            <Button 
-              onClick={handleLogout}
-              variant="outline" 
-              className="bg-transparent border-white/40 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] rounded-full h-10 px-4 transition-all"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
+              {/* Admin Dashboard Link (if authorized but on home page) */}
+              {isAuthorized && !pathname.includes("/admin") && (
+                <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-4 font-bold uppercase text-[10px] tracking-widest gap-2">
+                  <Link href="/admin/dashboard">
+                    <LayoutDashboard className="w-4 h-4" />
+                    <span className="hidden sm:inline">Admin Panel</span>
+                  </Link>
+                </Button>
+              )}
+
+              <Button 
+                onClick={handleLogout}
+                variant="outline" 
+                className="bg-transparent border-white/40 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] rounded-full h-10 px-4 transition-all"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         ) : (
           isMounted && !pathname.includes("/admin/login") && (
