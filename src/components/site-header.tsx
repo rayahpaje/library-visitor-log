@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -11,7 +10,7 @@ import { useUser, useAuth } from "@/firebase";
 import { signOut, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 export function SiteHeader() {
@@ -19,8 +18,13 @@ export function SiteHeader() {
   const router = useRouter();
   const { user } = useUser();
   const auth = useAuth();
+  const [isMounted, setIsMounted] = useState(false);
   const isAdminPath = pathname.startsWith("/admin");
   const logo = PlaceHolderImages.find(img => img.id === "neu-logo");
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const userRole = useMemo(() => {
     if (!user) return null;
@@ -72,7 +76,7 @@ export function SiteHeader() {
       </div>
 
       <div className="flex items-center gap-4">
-        {user ? (
+        {isMounted && user ? (
           <div className="flex items-center gap-4">
             <div className="hidden md:flex flex-col items-end -space-y-1">
               <span className="text-sm font-bold text-[#FFD600]">{user.displayName || "Member"}</span>
@@ -97,7 +101,7 @@ export function SiteHeader() {
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
-        ) : (
+        ) : isMounted ? (
           <div className="flex items-center gap-3">
              <Button 
               onClick={handleLogin}
@@ -117,7 +121,7 @@ export function SiteHeader() {
               </Button>
             )}
           </div>
-        )}
+        ) : null}
       </div>
     </header>
   );

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from "react";
@@ -62,6 +61,11 @@ export function VisitorSignInForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginMethod, setLoginMethod] = useState<"tap" | "email">("tap");
   const [submitted, setSubmitted] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -75,7 +79,7 @@ export function VisitorSignInForm() {
 
   // Auto-fill form from authenticated user details
   useEffect(() => {
-    if (user) {
+    if (user && isMounted) {
       form.setValue("fullName", user.displayName || "");
       if (user.email) {
         form.setValue("idNumber", user.email);
@@ -85,7 +89,7 @@ export function VisitorSignInForm() {
         }
       }
     }
-  }, [user, form]);
+  }, [user, form, isMounted]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!db) return;
@@ -116,6 +120,8 @@ export function VisitorSignInForm() {
         setIsLoading(false);
       });
   }
+
+  if (!isMounted) return null;
 
   if (submitted) {
     return (
