@@ -13,7 +13,8 @@ import {
   FileText,
   ShieldCheck,
   User as UserIcon,
-  BadgeCheck
+  BadgeCheck,
+  CalendarDays
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ import {
   where, 
   getDocs
 } from "firebase/firestore";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isToday, startOfWeek } from "date-fns";
 import { cn } from "@/lib/utils";
 import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
 import { toast } from "@/hooks/use-toast";
@@ -77,10 +78,18 @@ export default function AdminDashboard() {
     return [...firestoreData, ...mockData].filter(u => !sessionUnblockedIds.includes(u.institutionalId));
   }, [dbBlocked, sessionUnblockedIds]);
 
+  // Reactive Stats Logic
   const stats = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date().setHours(0, 0, 0, 0);
+    const weekStart = startOfWeek(now).getTime();
+
+    const countToday = allVisitors.filter(v => new Date(v.timeIn).getTime() >= todayStart).length;
+    const countWeek = allVisitors.filter(v => new Date(v.timeIn).getTime() >= weekStart).length;
+
     return {
-      today: 145, 
-      week: 650, 
+      today: countToday, 
+      week: countWeek, 
       blocked: blockedList.length, 
       active: allVisitors.length - blockedList.length
     };
@@ -157,21 +166,25 @@ export default function AdminDashboard() {
       <SiteHeader />
       
       <main className="flex-1 p-8 max-w-[1400px] mx-auto w-full space-y-8">
-        {/* User Identity Section - Prominent details and role */}
+        {/* User Identity Section - Real-time account details */}
         {isMounted && user ? (
-          <div className="bg-white border border-black/5 shadow-sm rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl -z-0" />
+          <div className="bg-white border border-black/5 shadow-sm rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl -z-0 transition-all group-hover:bg-primary/10" />
             
             <div className="flex items-center gap-6 relative z-10">
-              <Avatar className="h-24 w-24 border-4 border-primary/10 shadow-xl">
-                <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} />
-                <AvatarFallback className="bg-primary/5 text-primary text-3xl font-bold uppercase">
-                  {user.displayName?.charAt(0) || "U"}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-24 w-24 border-4 border-primary/10 shadow-xl transition-transform group-hover:scale-105">
+                  <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} />
+                  <AvatarFallback className="bg-primary/5 text-primary text-3xl font-bold uppercase">
+                    {user.displayName?.charAt(0) || user.email?.charAt(0) || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute -bottom-1 -right-1 bg-green-500 w-6 h-6 rounded-full border-4 border-white animate-pulse shadow-sm" />
+              </div>
+
               <div className="space-y-1.5">
                 <div className="flex items-center gap-3">
-                  <h2 className="text-3xl font-black text-primary tracking-tight">{user.displayName || "Welcome"}</h2>
+                  <h2 className="text-3xl font-black text-primary tracking-tight">{user.displayName || "Welcome Back"}</h2>
                   <div className={cn(
                     "px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md border flex items-center gap-1.5 shadow-sm",
                     userRole === "Library Staff" 
@@ -186,9 +199,15 @@ export default function AdminDashboard() {
                   <UserIcon className="w-4 h-4 text-primary" />
                   {user.email}
                 </p>
-                <div className="flex items-center gap-2 pt-1">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-[10px] font-bold text-green-700 uppercase tracking-widest">Active Session: {userRole} Dashboard</span>
+                <div className="flex items-center gap-4 pt-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-green-500 rounded-full" />
+                    <span className="text-[10px] font-bold text-green-700 uppercase tracking-widest">Live Session</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <CalendarDays className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">{format(new Date(), "MMMM dd, yyyy")}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -196,8 +215,11 @@ export default function AdminDashboard() {
             <div className="flex flex-col items-end gap-3 text-right relative z-10">
               <div className="flex items-center gap-2 text-primary/40">
                 <ShieldCheck className="w-5 h-5" />
-                <span className="text-[10px] font-bold uppercase tracking-tight">Verified Administrative Identity</span>
+                <span className="text-[10px] font-bold uppercase tracking-tight">Verified Staff Portal</span>
               </div>
+              <Button variant="outline" size="sm" className="rounded-full font-bold uppercase text-[10px] tracking-widest" asChild>
+                <Link href="/admin/logs">View Activity Reports</Link>
+              </Button>
             </div>
           </div>
         ) : !isUserLoading && (
@@ -225,43 +247,43 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden" suppressHydrationWarning>
+              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden transition-all hover:shadow-md" suppressHydrationWarning>
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-black/80">
                     <Users className="w-5 h-5" />
                     <span className="text-sm font-bold uppercase tracking-tight">Today's Logs</span>
                   </div>
-                  <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.today : 0}</h3>
+                  <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.today : "--"}</h3>
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden" suppressHydrationWarning>
+              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden transition-all hover:shadow-md" suppressHydrationWarning>
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-black/80">
                     <TrendingUp className="w-5 h-5 text-green-600" />
-                    <span className="text-sm font-bold uppercase tracking-tight">Weekly Peak</span>
+                    <span className="text-sm font-bold uppercase tracking-tight">This Week</span>
                   </div>
-                  <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.week : 0}</h3>
+                  <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.week : "--"}</h3>
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden" suppressHydrationWarning>
+              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden transition-all hover:shadow-md" suppressHydrationWarning>
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-destructive">
                     <Ban className="w-5 h-5" />
                     <span className="text-sm font-bold uppercase tracking-tight">Blocked Users</span>
                   </div>
-                  <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.blocked : 0}</h3>
+                  <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.blocked : "--"}</h3>
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden" suppressHydrationWarning>
+              <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden transition-all hover:shadow-md" suppressHydrationWarning>
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-primary">
                     <Monitor className="w-5 h-5" />
-                    <span className="text-sm font-bold uppercase tracking-tight">Active Sessions</span>
+                    <span className="text-sm font-bold uppercase tracking-tight">Total History</span>
                   </div>
-                  <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.active : 0}</h3>
+                  <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? allVisitors.length : "--"}</h3>
                 </CardContent>
               </Card>
             </div>
