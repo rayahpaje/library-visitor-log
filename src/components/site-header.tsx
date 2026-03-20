@@ -45,26 +45,19 @@ export function SiteHeader() {
 
   return (
     <header className="bg-primary text-white py-4 px-6 md:px-10 flex items-center h-20 shadow-lg z-50 sticky top-0" suppressHydrationWarning>
-      <div className="flex-1 flex justify-start">
-        {isMounted && !isHome && (
-          <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm transition-all">
-            <Link href="/">
-              <UserIcon className="w-3.5 h-3.5" />
-              Student Portal
-            </Link>
-          </Button>
-        )}
-      </div>
+      {/* Left Spacer to maintain center branding */}
+      <div className="flex-1 flex justify-start" />
 
+      {/* Center Branding */}
       <div className="flex items-center gap-4 justify-center flex-shrink-0">
         <Link href="/" className="relative w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-md overflow-hidden transition-all hover:scale-105 group">
           {logo && (
-            <div className="relative w-10 h-10">
+            <div className="relative w-11 h-11">
               <Image 
                 src={logo.imageUrl} 
                 alt="NEU Logo" 
                 fill
-                className="object-contain transition-transform group-hover:rotate-6"
+                className="object-contain transition-transform group-hover:scale-110"
                 data-ai-hint={logo.imageHint}
                 priority
               />
@@ -77,7 +70,18 @@ export function SiteHeader() {
         </div>
       </div>
 
+      {/* Right Side Actions */}
       <div className="flex-1 flex justify-end items-center gap-4">
+        {/* Student Portal Navigation (Now on the Right) */}
+        {isMounted && !isHome && (
+          <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm transition-all">
+            <Link href="/">
+              <UserIcon className="w-3.5 h-3.5" />
+              Student Portal
+            </Link>
+          </Button>
+        )}
+
         {isMounted && user ? (
           <>
             <div className="hidden md:flex flex-col items-end -space-y-1 mr-2">

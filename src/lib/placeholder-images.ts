@@ -5,6 +5,10 @@ export type ImagePlaceholder = {
   imageHint: string;
 };
 
+/**
+ * Image configuration for NEU Library application.
+ * Using a TS file instead of JSON to avoid Turbopack HMR resolution issues.
+ */
 export const PlaceHolderImages: ImagePlaceholder[] = [
   {
     id: "neu-campus-bg",
