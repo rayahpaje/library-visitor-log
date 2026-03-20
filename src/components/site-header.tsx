@@ -46,7 +46,7 @@ export function SiteHeader() {
   return (
     <header className="bg-[#004D40] text-white py-4 px-6 md:px-10 flex items-center justify-between h-20 shadow-md z-50 sticky top-0" suppressHydrationWarning>
       <div className="flex items-center gap-4">
-        <Link href="/" className="relative w-14 h-14 flex items-center justify-center overflow-hidden transition-transform hover:scale-105">
+        <Link href="/" className="relative w-14 h-14 flex items-center justify-center overflow-hidden transition-transform hover:scale-105 bg-white rounded-full p-1.5 shadow-sm border border-white/10">
           {logo && (
             <Image 
               src={logo.imageUrl} 
