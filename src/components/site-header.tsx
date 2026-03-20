@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -32,11 +33,11 @@ export function SiteHeader() {
 
   const userRole = useMemo(() => {
     if (!user) return null;
-    if (ADMIN_EMAILS.includes(user.email || "")) return "Library Staff";
+    if (ADMIN_EMAILS.includes(user.email || "")) return "Admin";
     return "Student";
   }, [user]);
 
-  const isAuthorized = useMemo(() => userRole === "Library Staff", [userRole]);
+  const isAuthorized = useMemo(() => userRole === "Admin", [userRole]);
 
   const handleLogout = async () => {
     if (!auth) return;

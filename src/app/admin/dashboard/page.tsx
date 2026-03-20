@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
@@ -155,11 +156,11 @@ export default function AdminDashboard() {
 
   const userRole = useMemo(() => {
     if (!user) return "Guest";
-    if (ADMIN_EMAILS.includes(user.email || "")) return "Library Staff";
+    if (ADMIN_EMAILS.includes(user.email || "")) return "Admin";
     return "Student";
   }, [user]);
 
-  const isAuthorized = useMemo(() => userRole === "Library Staff", [userRole]);
+  const isAuthorized = useMemo(() => userRole === "Admin", [userRole]);
 
   const handleBlock = async (visitor: any) => {
     if (!db || !isAuthorized) return;
@@ -280,7 +281,7 @@ export default function AdminDashboard() {
             </div>
             <h2 className="text-2xl font-black text-primary uppercase">Restricted Area</h2>
             <p className="text-muted-foreground max-w-md mx-auto text-sm">
-              Your account (<strong>{user.email}</strong>) is identified as a Student. Access to the administrative dashboard is reserved for authorized Library Staff only.
+              Your account (<strong>{user.email}</strong>) is identified as a Student. Access to the administrative dashboard is reserved for authorized Admin only.
             </p>
             <Button variant="outline" className="mt-4 rounded-full font-bold uppercase text-xs" asChild>
               <Link href="/">Back to Student Portal</Link>
