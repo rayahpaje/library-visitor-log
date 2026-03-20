@@ -1,173 +1,137 @@
-
 {
   "entities": {
     "Visitor": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Visitor",
       "type": "object",
-      "description": "Represents a person visiting the library, identified by their institutional details.",
+      "description": "Represents an individual visitor to the library, storing their identifying information.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the Visitor entity."
         },
-        "institutionalIdNumber": {
+        "institutionalId": {
           "type": "string",
-          "description": "The unique identification number assigned to the visitor by their institution (e.g., student ID, employee ID)."
+          "description": "The official ID provided by the institution (e.g., student ID, employee ID) for visitor identification."
         },
-        "institutionalEmail": {
+        "email": {
           "type": "string",
-          "description": "The official institutional email address of the visitor, used for sign-in.",
+          "description": "The institutional email address of the visitor, used for identification.",
           "format": "email"
         },
-        "name": {
+        "fullName": {
           "type": "string",
           "description": "The full name of the visitor."
         },
-        "collegeOffice": {
+        "collegeOrOffice": {
           "type": "string",
-          "description": "The college or administrative office the visitor is associated with."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the visitor's record was first created in the system.",
-          "format": "date-time"
+          "description": "The college or office the visitor is affiliated with within the institution."
         }
       },
       "required": [
         "id",
-        "institutionalIdNumber",
-        "institutionalEmail",
-        "name",
-        "collegeOffice",
-        "createdAt"
+        "institutionalId",
+        "email",
+        "fullName",
+        "collegeOrOffice"
+      ]
+    },
+    "Purpose": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Purpose",
+      "type": "object",
+      "description": "Represents a predefined common purpose for visiting the library, often suggested by an AI tool.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Purpose entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The descriptive name of the purpose (e.g., 'Study', 'Research', 'Meeting')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A more detailed explanation of the purpose."
+        }
+      },
+      "required": [
+        "id",
+        "name"
       ]
     },
     "VisitLog": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "VisitLog",
       "type": "object",
-      "description": "Records details of a single visit by a visitor to the library, including sign-in and sign-out times and purpose.",
+      "description": "Records each instance of a visitor signing into and out of the library.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the VisitLog entity."
+          "description": "Unique identifier for the VisitLog entry."
         },
         "visitorId": {
           "type": "string",
-          "description": "Reference to the Visitor who made this visit. (Relationship: Visitor 1:N VisitLog)"
+          "description": "Reference to the Visitor entity who made this visit. (Relationship: Visitor 1:N VisitLog)"
         },
         "timeIn": {
           "type": "string",
-          "description": "Timestamp when the visitor signed in.",
+          "description": "Timestamp indicating when the visitor signed into the library.",
           "format": "date-time"
         },
         "timeOut": {
           "type": "string",
-          "description": "Optional timestamp when the visitor signed out. This property is null if the session is still active.",
+          "description": "Timestamp indicating when the visitor signed out of the library. Null or missing for active sessions.",
           "format": "date-time"
         },
-        "purpose": {
+        "purposeId": {
           "type": "string",
-          "description": "The stated purpose of the visitor's visit to the library, potentially aided by AI suggestions."
+          "description": "Reference to the Purpose entity describing the primary reason for the visit. (Relationship: Purpose 1:N VisitLog)"
         },
-        "status": {
+        "customPurposeDescription": {
           "type": "string",
-          "description": "The current status of the visit (e.g., 'Active', 'Completed', 'Canceled', 'Blocked Entry')."
+          "description": "Optional free-text field for a purpose not covered by predefined categories."
         }
       },
       "required": [
         "id",
         "visitorId",
         "timeIn",
-        "purpose",
-        "status"
+        "purposeId"
       ]
     },
-    "AdminUser": {
+    "BlockEntry": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AdminUser",
+      "title": "BlockEntry",
       "type": "object",
-      "description": "Represents an administrative user with secure access to manage visitor logs and system settings, authenticated via Google Login.",
+      "description": "Manages records of visitors who are blocked from accessing the library, along with reasons and status.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the AdminUser entity."
-        },
-        "googleId": {
-          "type": "string",
-          "description": "The unique identifier provided by Google for the authenticated admin user via Google Login."
-        },
-        "email": {
-          "type": "string",
-          "description": "The institutional email address of the administrator, primarily used for identification and Google Login.",
-          "format": "email"
-        },
-        "name": {
-          "type": "string",
-          "description": "The full name of the administrator."
-        },
-        "role": {
-          "type": "string",
-          "description": "The role assigned to the administrator within the system (e.g., 'Admin', 'SuperAdmin')."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the admin user's record was first created.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "googleId",
-        "email",
-        "name",
-        "role",
-        "createdAt"
-      ]
-    },
-    "BlockedVisitor": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "BlockedVisitor",
-      "type": "object",
-      "description": "Records visitors who are blocked from entering the library, detailing the reason, blocking administration, and status.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the BlockedVisitor entity."
+          "description": "Unique identifier for the BlockEntry entity."
         },
         "visitorId": {
           "type": "string",
-          "description": "Reference to the Visitor who is blocked. (Relationship: Visitor 1:N BlockedVisitor)"
+          "description": "Reference to the Visitor entity who is blocked. (Relationship: Visitor 1:N BlockEntry)"
         },
-        "blockedByAdminId": {
+        "blockReason": {
           "type": "string",
-          "description": "Reference to the AdminUser who initiated the block. (Relationship: AdminUser 1:N BlockedVisitor)"
-        },
-        "reason": {
-          "type": "string",
-          "description": "The detailed reason or justification for blocking the visitor."
+          "description": "A detailed explanation of why the visitor has been blocked."
         },
         "blockedAt": {
           "type": "string",
-          "description": "Timestamp when the visitor was added to the block list.",
-          "format": "date-time"
-        },
-        "unblockedAt": {
-          "type": "string",
-          "description": "Optional timestamp when the visitor was removed from the block list, if applicable.",
+          "description": "Timestamp indicating when the block was initiated.",
           "format": "date-time"
         },
         "isActive": {
           "type": "boolean",
-          "description": "Boolean indicating if the block is currently active (true) or has been lifted (false)."
+          "description": "Boolean flag indicating if the block is currently active (true) or has been lifted (false)."
         }
       },
       "required": [
         "id",
         "visitorId",
-        "blockedByAdminId",
-        "reason",
+        "blockReason",
         "blockedAt",
         "isActive"
       ]
@@ -175,23 +139,40 @@
   },
   "auth": {
     "providers": [
-      "google.com"
+      "password",
+      "anonymous"
     ]
   },
   "firestore": {
     "structure": [
       {
-        "path": "/admin_users/{adminId}",
+        "path": "/roles_admin/{adminId}",
         "definition": {
-          "entityName": "AdminUser",
+          "entityName": "admin",
           "schema": {
-            "$ref": "#/backend/entities/AdminUser"
+            "$ref": "#/backend/entities/User"
           },
-          "description": "Stores administrator user profiles. Each document ID is the Google UID of the authenticated administrator for direct authorization checks. This collection defines who has administrative access to the system.",
+          "description": "Collection storing UIDs of users who have administrative privileges. The mere existence of a document signifies admin status (DBAC).",
           "params": [
             {
               "name": "adminId",
-              "description": "The unique Firebase Authentication UID (Google ID) of the administrator."
+              "description": "The Firebase Authentication UID of an administrator."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/purposes/{purposeId}",
+        "definition": {
+          "entityName": "Purpose",
+          "schema": {
+            "$ref": "#/backend/entities/Purpose"
+          },
+          "description": "Collection for predefined visit purposes. Globally readable for visitor sign-in, writeable only by administrators.",
+          "params": [
+            {
+              "name": "purposeId",
+              "description": "Unique identifier for the Purpose entity."
             }
           ]
         }
@@ -203,52 +184,48 @@
           "schema": {
             "$ref": "#/backend/entities/Visitor"
           },
-          "description": "Contains detailed profiles for all library visitors. Only administrators can read, create, update, or delete visitor records. Visitor sign-in is managed by server-side logic (e.g., Cloud Functions) interacting with this collection.",
+          "description": "Collection storing profiles of library visitors. Access is restricted to administrators and trusted backend services for read/write operations.",
           "params": [
             {
               "name": "visitorId",
-              "description": "The unique identifier for a visitor."
+              "description": "Unique identifier for the Visitor entity."
             }
           ]
         }
       },
       {
-        "path": "/visitors/{visitorId}/visit_logs/{visitLogId}",
+        "path": "/visitLogs/{visitLogId}",
         "definition": {
           "entityName": "VisitLog",
           "schema": {
             "$ref": "#/backend/entities/VisitLog"
           },
-          "description": "Records individual visit sessions for each visitor. This subcollection uses a hierarchical path to clearly associate visit logs with their respective visitors. Access is restricted to administrators. Includes denormalized 'visitorId' for authorization clarity.",
+          "description": "Collection recording each library visit. Access is restricted to administrators. Includes denormalized 'visitorFullName' and 'visitorCollegeOrOffice' for authorization independence and QAP support.",
           "params": [
             {
-              "name": "visitorId",
-              "description": "The unique identifier of the parent visitor."
-            },
-            {
               "name": "visitLogId",
-              "description": "The unique identifier for a specific visit log entry."
+              "description": "Unique identifier for the VisitLog entry."
             }
           ]
         }
       },
       {
-        "path": "/blocked_visitors/{blockedVisitorId}",
+        "path": "/blockEntries/{blockEntryId}",
         "definition": {
-          "entityName": "BlockedVisitor",
+          "entityName": "BlockEntry",
           "schema": {
-            "$ref": "#/backend/entities/BlockedVisitor"
+            "$ref": "#/backend/entities/BlockEntry"
           },
-          "description": "Manages a list of visitors who are blocked from entering the library. Access is restricted to administrators for managing entries and querying status. Each document includes denormalized 'visitorId' and 'blockedByAdminId' to ensure authorization independence when checking block status.",
+          "description": "Collection managing records of blocked visitors. Access is restricted to administrators. Includes denormalized 'visitorFullName' and 'visitorInstitutionalId' for authorization independence and QAP support.",
           "params": [
             {
-              "name": "blockedVisitorId",
-              "description": "The unique identifier for a blocked visitor record."
+              "name": "blockEntryId",
+              "description": "Unique identifier for the BlockEntry entity."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to be secure, scalable, and easily debuggable, prioritizing authorization independence and clear access patterns. Authorization context is denormalized to avoid get() calls in security rules. For example, administrative roles are determined by the existence of a document in the /admin_users/{adminId} collection, where adminId is the request.auth.uid. This allows for direct, atomic checks (exists(...)) rather than expensive and complex hierarchical lookups. For VisitLog entries, while they are nested under /visitors/{visitorId}/visit_logs/{visitLogId}, the primary authorization is that only administrators can access them. The visitorId is also explicitly stored within the VisitLog document, reinforcing its ownership without needing to get() the parent Visitor document. Similarly, the BlockedVisitor entity includes visitorId and blockedByAdminId directly, ensuring that rules can evaluate blocking status and origin without complex queries. The structure ensures that list operations (queries) are secure and efficient. The /admin_users collection is primarily for direct get operations using request.auth.uid to establish admin status. Listing is not a primary requirement for this collection's authorization purpose. The /visitors collection contains all visitor profiles. Access is restricted to authenticated administrators. Administrators can securely list and filter all visitors as needed for dashboard and activity log features. The /visitors/{visitorId}/visit_logs subcollection contains all visit records for a specific visitor. Access is restricted to authenticated administrators. Administrators can securely list and filter visit_logs for any visitorId, or use collection group queries to analyze all visit_logs across all visitors, applying filters like status or timeIn for statistics. The /blocked_visitors collection contains records of all blocked visitors. Access is restricted to authenticated administrators. Administrators can securely list and manage this collection. The data needed for checking if a visitor is blocked (e.g., visitorId, isActive) is present in each document, allowing efficient queries for blocking status without relying on parent documents or complex joins. Data is segregated by security posture. All documents in /admin_users share the same security need (admin access). All documents in /visitors and their subcollections /visit_logs are managed by admins. The BlockedVisitor collection is a separate top-level collection due to its distinct function (a global list of blocked individuals), ensuring a homogeneous security posture for all documents within it. Path-based ownership is utilized for VisitLog documents, clearly linking them to their respective Visitor."
+    "reasoning": "The recommended Firestore structure prioritizes security, scalability, and debuggability by strictly adhering to the core design principles and strategy mandates. Authorization Independence is paramount, achieved primarily through strategic denormalization and structural segregation, ensuring robust and simple security rules.\n\n**Authorization Independence:**\n1.  **Admin Role Segregation (`/roles_admin/{adminId}`):** Administrative privileges are granted by the mere existence of a document in the `/roles_admin` collection, where `adminId` is the `request.auth.uid`. This allows for a simple, atomic existence check in security rules, completely avoiding hierarchical `get()` calls to determine user roles or permissions. This fulfills DBAC (Database-Backed Access Control) by storing roles in the database.\n2.  **Centralized Institutional Data Ownership:** Core application data entities such as `Visitor` profiles, `VisitLog` entries, and `BlockEntry` records are treated as institution-owned data, rather than individually user-owned. This design choice means that access to these collections is primarily restricted to authenticated administrators. The security rules for `/visitors`, `/visitLogs`, and `/blockEntries` will check for admin status via `/roles_admin`, eliminating any need for `get()` calls to check for ownership or related document attributes for authorization within the rules.\n3.  **Denormalization for Context:** To enhance data clarity and support QAPs without `get()` calls in rules, critical contextual data is denormalized:\n    *   Each `VisitLog` document (`/visitLogs/{visitLogId}`) will include denormalized `visitorFullName` and `visitorCollegeOrOffice` fields. This ensures that when an administrator retrieves a `VisitLog`, all necessary display information about the visitor is immediately available within that single document, removing the need for additional client-side reads or complex rules to fetch visitor details.\n    *   Similarly, each `BlockEntry` document (`/blockEntries/{blockEntryId}`) will contain denormalized `visitorFullName` and `visitorInstitutionalId`. This makes each block entry self-contained for administrative review and reporting.\n4.  **Backend for Complex Operations:** The visitor sign-in process, which involves looking up or creating `Visitor` profiles, checking `BlockEntry` status, and creating `VisitLog` entries, will be mediated by a trusted backend service (e.g., Cloud Functions). This backend service, operating with administrative privileges, will handle the multi-document reads and writes required for a secure and atomic sign-in flow. This strategy offloads complex authorization logic from client-side Firestore rules, thus preventing rule-based `get()` dependencies and ensuring that the rules remain declarative and performant.\n\n**QAPs (Rules are not Filters):**\n1.  **Structural Segregation:** The principle of Structural Segregation ensures that all documents within a given collection share a homogeneous security posture, which is key for QAPs.\n    *   The `/purposes` collection is designed for global read access (e.g., `allow read: if request.auth.uid != null;` if the sign-in portal requires anonymous auth, or simply `if true;` for fully public access). This allows any visitor (or the sign-in portal) to list all available purposes without encountering documents they are not authorized to view, as all documents are equally accessible.\n    *   The `/visitors`, `/visitLogs`, and `/blockEntries` collections are designated as admin-only. An administrator, whose status is verified by the existence of their UID in `/roles_admin`, has full read access to *all* documents within these collections. Therefore, any `list` operation performed by an admin on these collections will return a complete and fully authorized dataset, fulfilling the QAP requirement that all returned documents satisfy the security conditions.\n\nThis structure ensures clear authorization intent, simplifies security rules by isolating access patterns, and optimizes for secure, scalable `list` operations."
   }
 }
