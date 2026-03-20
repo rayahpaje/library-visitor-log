@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   Filter,
   ArrowRight,
-  GraduationCap
+  GraduationCap,
+  Lock
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,12 @@ const PURPOSES = [
   "Research in thesis",
   "Use of computer",
   "Doing assignments"
+];
+
+const ADMIN_EMAILS = [
+  "jcesperanza@neu.edu.ph",
+  "rayahjenine.paje@neu.edu.ph",
+  "admin@neu.edu.ph"
 ];
 
 export default function AdminDashboard() {
@@ -148,14 +155,14 @@ export default function AdminDashboard() {
 
   const userRole = useMemo(() => {
     if (!user) return "Guest";
-    // Check if college field in visitors (if found) or some other claim. 
-    // For now, let's refine this to check for specific staff emails or simulate the role.
-    if (user.email === "admin@neu.edu.ph" || user.email?.includes("staff")) return "Library Staff";
+    if (ADMIN_EMAILS.includes(user.email || "")) return "Library Staff";
     return "Student";
   }, [user]);
 
+  const isAuthorized = useMemo(() => userRole === "Library Staff", [userRole]);
+
   const handleBlock = async (visitor: any) => {
-    if (!db) return;
+    if (!db || !isAuthorized) return;
     const isAlreadyBlocked = blockedList.find(b => b.institutionalId === visitor.institutionalId);
     if (isAlreadyBlocked) return;
 
@@ -216,9 +223,9 @@ export default function AdminDashboard() {
                   <h2 className="text-3xl font-black text-primary tracking-tight">{user.displayName || "Welcome Back"}</h2>
                   <div className={cn(
                     "px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md border flex items-center gap-1.5",
-                    userRole === "Library Staff" ? "bg-accent text-accent-foreground border-accent" : "bg-primary/10 text-primary border-primary/20"
+                    isAuthorized ? "bg-accent text-accent-foreground border-accent" : "bg-neutral-200 text-neutral-600 border-neutral-300"
                   )}>
-                    {userRole === "Library Staff" ? <BadgeCheck className="w-3.5 h-3.5" /> : <GraduationCap className="w-3.5 h-3.5" />}
+                    {isAuthorized ? <BadgeCheck className="w-3.5 h-3.5" /> : <GraduationCap className="w-3.5 h-3.5" />}
                     {userRole}
                   </div>
                 </div>
@@ -244,9 +251,11 @@ export default function AdminDashboard() {
                 <ShieldCheck className="w-5 h-5" />
                 <span className="text-[10px] font-bold uppercase tracking-tight">Verified Portal</span>
               </div>
-              <Button variant="outline" size="sm" className="rounded-full font-bold uppercase text-[10px] tracking-widest" asChild>
-                <Link href="/admin/logs">Detailed Logs</Link>
-              </Button>
+              {isAuthorized && (
+                <Button variant="outline" size="sm" className="rounded-full font-bold uppercase text-[10px] tracking-widest" asChild>
+                  <Link href="/admin/logs">Detailed Logs</Link>
+                </Button>
+              )}
             </div>
           </div>
         ) : !isUserLoading && (
@@ -259,7 +268,22 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {user && (
+        {user && !isAuthorized && (
+          <Card className="border-none shadow-sm rounded-2xl p-20 text-center bg-white flex flex-col items-center gap-4">
+            <div className="bg-red-50 p-6 rounded-full text-red-500">
+              <Lock className="w-12 h-12" />
+            </div>
+            <h2 className="text-2xl font-black text-primary uppercase">Restricted Area</h2>
+            <p className="text-muted-foreground max-w-md mx-auto text-sm">
+              Your account (<strong>{user.email}</strong>) is identified as a Student. Access to the administrative dashboard is reserved for authorized Library Staff only.
+            </p>
+            <Button variant="outline" className="mt-4 rounded-full font-bold uppercase text-xs" asChild>
+              <Link href="/">Back to Entry Portal</Link>
+            </Button>
+          </Card>
+        )}
+
+        {user && isAuthorized && (
           <>
             {/* Filtering Controls */}
             <Card className="border-none shadow-sm rounded-xl bg-white overflow-hidden">
@@ -429,7 +453,7 @@ export default function AdminDashboard() {
                             "hover:bg-muted/10 border-black/5 transition-colors cursor-pointer",
                             isBlocked && "bg-red-50/30"
                           )}
-                          onClick={() => userRole === "Library Staff" && !isBlocked && handleBlock(visitor)}
+                          onClick={() => isAuthorized && !isBlocked && handleBlock(visitor)}
                         >
                           <TableCell className="py-4">{formatDateTime(visitor.timeIn)}</TableCell>
                           <TableCell>

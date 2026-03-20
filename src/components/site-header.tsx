@@ -12,6 +12,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import { useMemo, useState, useEffect } from "react";
 
+const ADMIN_EMAILS = [
+  "jcesperanza@neu.edu.ph",
+  "rayahjenine.paje@neu.edu.ph",
+  "admin@neu.edu.ph"
+];
+
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
@@ -26,7 +32,7 @@ export function SiteHeader() {
 
   const userRole = useMemo(() => {
     if (!user) return null;
-    if (user.email?.endsWith("@neu.edu.ph")) return "Library Staff";
+    if (ADMIN_EMAILS.includes(user.email || "")) return "Library Staff";
     return "Student";
   }, [user]);
 
