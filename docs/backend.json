@@ -1,230 +1,55 @@
-
 {
   "entities": {
     "Visitor": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Visitor",
       "type": "object",
-      "description": "Represents an individual visitor to the library, storing their identifying information.",
+      "description": "Represents an individual visitor to the library.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Visitor entity."
-        },
-        "institutionalId": {
-          "type": "string",
-          "description": "The official ID provided by the institution (e.g., student ID, employee ID) for visitor identification."
-        },
-        "email": {
-          "type": "string",
-          "description": "The institutional email address of the visitor, used for identification.",
-          "format": "email"
-        },
-        "fullName": {
-          "type": "string",
-          "description": "The full name of the visitor."
-        },
-        "collegeOrOffice": {
-          "type": "string",
-          "description": "The college or office the visitor is affiliated with within the institution."
-        }
+        "id": { "type": "string" },
+        "institutionalId": { "type": "string" },
+        "name": { "type": "string" },
+        "college": { "type": "string" },
+        "purpose": { "type": "string" },
+        "timeIn": { "type": "string", "format": "date-time" },
+        "status": { "type": "string" }
       },
-      "required": [
-        "id",
-        "institutionalId",
-        "email",
-        "fullName",
-        "collegeOrOffice"
-      ]
-    },
-    "Purpose": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Purpose",
-      "type": "object",
-      "description": "Represents a predefined common purpose for visiting the library, often suggested by an AI tool.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Purpose entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The descriptive name of the purpose (e.g., 'Study', 'Research', 'Meeting')."
-        },
-        "description": {
-          "type": "string",
-          "description": "A more detailed explanation of the purpose."
-        }
-      },
-      "required": [
-        "id",
-        "name"
-      ]
-    },
-    "VisitLog": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "VisitLog",
-      "type": "object",
-      "description": "Records each instance of a visitor signing into and out of the library.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the VisitLog entry."
-        },
-        "visitorId": {
-          "type": "string",
-          "description": "Reference to the Visitor entity who made this visit. (Relationship: Visitor 1:N VisitLog)"
-        },
-        "timeIn": {
-          "type": "string",
-          "description": "Timestamp indicating when the visitor signed into the library.",
-          "format": "date-time"
-        },
-        "timeOut": {
-          "type": "string",
-          "description": "Timestamp indicating when the visitor signed out of the library. Null or missing for active sessions.",
-          "format": "date-time"
-        },
-        "purposeId": {
-          "type": "string",
-          "description": "Reference to the Purpose entity describing the primary reason for the visit. (Relationship: Purpose 1:N VisitLog)"
-        },
-        "customPurposeDescription": {
-          "type": "string",
-          "description": "Optional free-text field for a purpose not covered by predefined categories."
-        }
-      },
-      "required": [
-        "id",
-        "visitorId",
-        "timeIn",
-        "purposeId"
-      ]
+      "required": ["name", "institutionalId", "college", "purpose", "timeIn"]
     },
     "BlockEntry": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "BlockEntry",
       "type": "object",
-      "description": "Manages records of visitors who are blocked from accessing the library, along with reasons and status.",
+      "description": "Records of blocked visitors.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the BlockEntry entity."
-        },
-        "visitorId": {
-          "type": "string",
-          "description": "Reference to the Visitor entity who is blocked. (Relationship: Visitor 1:N BlockEntry)"
-        },
-        "blockReason": {
-          "type": "string",
-          "description": "A detailed explanation of why the visitor has been blocked."
-        },
-        "blockedAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the block was initiated.",
-          "format": "date-time"
-        },
-        "isActive": {
-          "type": "boolean",
-          "description": "Boolean flag indicating if the block is currently active (true) or has been lifted (false)."
-        }
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "institutionalId": { "type": "string" },
+        "reason": { "type": "string" },
+        "dateBlocked": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "visitorId",
-        "blockReason",
-        "blockedAt",
-        "isActive"
-      ]
+      "required": ["name", "institutionalId", "reason", "dateBlocked"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous",
-      "google.com"
-    ]
+    "providers": ["google.com", "password"]
   },
   "firestore": {
     "structure": [
       {
-        "path": "/roles_admin/{adminId}",
-        "definition": {
-          "entityName": "admin",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Collection storing UIDs of users who have administrative privileges. The mere existence of a document signifies admin status (DBAC).",
-          "params": [
-            {
-              "name": "adminId",
-              "description": "The Firebase Authentication UID of an administrator."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/purposes/{purposeId}",
-        "definition": {
-          "entityName": "Purpose",
-          "schema": {
-            "$ref": "#/backend/entities/Purpose"
-          },
-          "description": "Collection for predefined visit purposes. Globally readable for visitor sign-in, writeable only by administrators.",
-          "params": [
-            {
-              "name": "purposeId",
-              "description": "Unique identifier for the Purpose entity."
-            }
-          ]
-        }
-      },
-      {
         "path": "/visitors/{visitorId}",
         "definition": {
           "entityName": "Visitor",
-          "schema": {
-            "$ref": "#/backend/entities/Visitor"
-          },
-          "description": "Collection storing profiles of library visitors. Access is restricted to administrators and trusted backend services for read/write operations.",
-          "params": [
-            {
-              "name": "visitorId",
-              "description": "Unique identifier for the Visitor entity."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/Visitor" },
+          "description": "Visitor entry logs."
         }
       },
       {
-        "path": "/visitLogs/{visitLogId}",
-        "definition": {
-          "entityName": "VisitLog",
-          "schema": {
-            "$ref": "#/backend/entities/VisitLog"
-          },
-          "description": "Collection recording each library visit. Access is restricted to administrators. Includes denormalized 'visitorFullName' and 'visitorCollegeOrOffice' for authorization independence and QAP support.",
-          "params": [
-            {
-              "name": "visitLogId",
-              "description": "Unique identifier for the VisitLog entry."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/blockEntries/{blockEntryId}",
+        "path": "/blockList/{blockId}",
         "definition": {
           "entityName": "BlockEntry",
-          "schema": {
-            "$ref": "#/backend/entities/BlockEntry"
-          },
-          "description": "Collection managing records of blocked visitors. Access is restricted to administrators. Includes denormalized 'visitorFullName' and 'visitorInstitutionalId' for authorization independence and QAP support.",
-          "params": [
-            {
-              "name": "blockEntryId",
-              "description": "Unique identifier for the BlockEntry entity."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/BlockEntry" },
+          "description": "List of restricted library visitors."
         }
       }
     ]

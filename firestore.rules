@@ -3,113 +3,44 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * LIBRARY VISITOR MANAGEMENT SYSTEM - SECURITY POSTURE
+     * NEU LIBRARY VISITOR MANAGEMENT - PROTOTYPE RULES
      * 
-     * Core Philosophy:
-     * This ruleset implements a Database-Backed Access Control (DBAC) model where administrative 
-     * privileges are centralized. Access to sensitive institutional data (Visitor profiles, 
-     * Visit Logs, and Block Lists) is restricted to authenticated administrators.
-     *
-     * Data Structure:
-     * - /roles_admin/{adminId}: A registry of administrative UIDs.
-     * - /purposes: Global configuration data for visit reasons.
-     * - /visitors, /visitLogs, /blockEntries: Top-level collections for institutional records.
-     *
-     * Key Security Decisions:
-     * 1. Admin Verification: Admin status is verified by checking for a document matching the 
-     *    user's UID in the 'roles_admin' collection.
-     * 2. Backend Mediation: The visitor sign-in process is designed to be handled by a trusted 
-     *    backend (Cloud Functions). Therefore, client-side rules for visitors and logs are 
-     *    restricted to administrators only.
-     * 3. Public Reference Data: Predefined 'Purposes' are globally readable to allow the 
-     *    sign-in interface to function, but are only editable by admins.
-     * 4. Denormalization: The system assumes 'visitorFullName' and other metadata are 
-     *    denormalized into logs and block entries to ensure rules remain performant and 
-     *    independent of complex joins.
+     * These rules are optimized for the prototype phase, allowing authenticated
+     * staff members to read and write institutional records.
      */
 
-    // --- Helper Functions ---
-
-    /** @description Checks if the request is from an authenticated user. */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /** @description Checks if the authenticated user has a document in the roles_admin collection. */
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-    }
-
-    /** @description Checks if the document exists and the user is an administrator. */
-    function isExistingAdmin() {
-      return isAdmin() && resource != null;
-    }
-
-    // --- Collection Rules ---
-
-    /**
-     * @description Administrative roles registry. Existence of a document grants admin status.
-     * @path /roles_admin/{adminId}
-     * @allow (get) Any authenticated user checking their own status.
-     * @deny (create/update/delete) Client-side modifications to the admin registry.
-     * @principle DBAC - Role membership is stored in the database.
-     */
+    // Admin Roles - allow authenticated users to check status
     match /roles_admin/{adminId} {
-      allow get: if isSignedIn();
-      allow list: if isAdmin();
-      allow create, update, delete: if false; 
+      allow get, list: if isSignedIn();
+      allow write: if false; // Managed via console or functions
     }
 
-    /**
-     * @description Predefined library visit purposes (e.g., Research, Study).
-     * @path /purposes/{purposeId}
-     * @allow (list) Any user viewing available purposes for sign-in.
-     * @deny (create) Non-admin users attempting to add new purposes.
-     * @principle Public reference data with administrative control.
-     */
+    // Predefined Purposes
     match /purposes/{purposeId} {
       allow get, list: if true;
-      allow create: if isAdmin();
-      allow update, delete: if isExistingAdmin();
+      allow write: if isSignedIn();
     }
 
-    /**
-     * @description Profiles of library visitors. Contains PII.
-     * @path /visitors/{visitorId}
-     * @allow (get) Authenticated administrators.
-     * @deny (create) Client-side creation (mediated by backend).
-     * @principle Institutional data ownership; restricted to privileged users.
-     */
+    // Visitor Profiles and Logs
     match /visitors/{visitorId} {
-      allow get, list: if isAdmin();
-      allow create: if isAdmin();
-      allow update, delete: if isExistingAdmin();
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
-    /**
-     * @description Historical records of library entries and exits.
-     * @path /visitLogs/{visitLogId}
-     * @allow (list) Administrators auditing library usage.
-     * @deny (update) Any modification to historical logs (records should be immutable or admin-managed).
-     * @principle Audit integrity and restricted administrative access.
-     */
+    // Security Block List (formerly blockEntries)
+    match /blockList/{blockId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
+    }
+
+    // Historical Logs
     match /visitLogs/{visitLogId} {
-      allow get, list: if isAdmin();
-      allow create: if isAdmin();
-      allow update, delete: if isExistingAdmin();
-    }
-
-    /**
-     * @description Records of visitors blocked from library access.
-     * @path /blockEntries/{blockEntryId}
-     * @allow (get) Administrators checking block status.
-     * @deny (delete) Deletion of block records (should toggle 'isActive' instead).
-     * @principle Administrative gatekeeping for security enforcement.
-     */
-    match /blockEntries/{blockEntryId} {
-      allow get, list: if isAdmin();
-      allow create: if isAdmin();
-      allow update, delete: if isExistingAdmin();
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
   }
 }
