@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle, Info, ShieldAlert, ArrowLeft } from "lucide-react";
+import { Loader2, AlertCircle, Info, ShieldAlert } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { useAuth } from "@/firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
@@ -11,7 +11,6 @@ import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import Link from "next/link";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -32,12 +31,18 @@ export default function AdminLogin() {
     try {
       await signInWithPopup(auth, provider);
       toast({ 
-        title: "Welcome to NEU Library", 
-        description: "Successfully authenticated as Staff." 
+        title: "Access Granted", 
+        description: "Welcome to NEU Library." 
       });
       router.push("/admin/dashboard");
     } catch (err: any) {
       console.error("Login Error:", err);
+      
+      // Gracefully handle if the user closes the popup manually
+      if (err.code === 'auth/popup-closed-by-user') {
+        setIsLoading(false);
+        return;
+      }
       
       if (err.code === 'auth/operation-not-allowed') {
         setErrorType("config");
