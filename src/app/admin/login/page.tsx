@@ -56,9 +56,6 @@ export default function AdminLogin() {
       <main className="flex-1 flex flex-col items-center justify-center p-6 pb-20">
         <div className="w-full max-w-[550px] bg-[#537D6B] rounded-3xl shadow-2xl p-10 md:p-14 text-white text-center">
           <div className="space-y-6 mb-10">
-            <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-accent text-accent-foreground font-black text-[10px] uppercase tracking-[0.2em] mb-4">
-              Admin Portal
-            </div>
             <h2 className="text-3xl font-bold tracking-tight uppercase">WELCOME TO NEU LIBRARY!</h2>
             <div className="space-y-2">
               <h3 className="text-2xl font-black text-[#FFD600] tracking-wide uppercase">STAFF LOGIN</h3>
