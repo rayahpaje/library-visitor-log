@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -69,7 +68,7 @@ export default function AdminLogin() {
               <Info className="h-5 w-5 text-blue-700" />
               <AlertTitle className="font-bold text-sm">Action Required: Enable Google Provider</AlertTitle>
               <AlertDescription className="text-xs mt-1 leading-relaxed">
-                To allow signing in, you must go to the <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold">Firebase Console</a>, navigate to <b>Authentication > Sign-in method</b>, and enable the <b>Google</b> provider.
+                To allow signing in, you must go to the <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold">Firebase Console</a>, navigate to <b>Authentication &gt; Sign-in method</b>, and enable the <b>Google</b> provider.
               </AlertDescription>
             </Alert>
           )}
