@@ -16,7 +16,8 @@ import {
   Filter,
   GraduationCap,
   Lock,
-  UserCheck
+  UserCheck,
+  Trash2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,8 @@ import { cn } from "@/lib/utils";
 import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
 import { toast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 import Link from "next/link";
 
 const COLLEGES = [
@@ -160,7 +163,7 @@ export default function AdminDashboard() {
       const snapshot = await getDocs(q);
       snapshot.forEach((d) => deleteDoc(doc(db, "blockList", d.id)));
       
-      if (visitor.id) {
+      if (visitor.id && !visitor.id.startsWith('v')) { // Don't try to update mock IDs
         updateDoc(doc(db, "visitors", visitor.id), { status: "Active" });
       }
       
@@ -175,12 +178,27 @@ export default function AdminDashboard() {
         dateBlocked: new Date().toISOString()
       });
 
-      if (visitor.id) {
+      if (visitor.id && !visitor.id.startsWith('v')) {
         updateDoc(doc(db, "visitors", visitor.id), { status: "Inactive" });
       }
 
       toast({ variant: "destructive", title: "Access Restricted", description: `${visitor.name} is now Blocked.` });
     }
+  };
+
+  const deleteVisitor = async (visitorId: string) => {
+    if (!db || !isAuthorized || !visitorId) return;
+    
+    // Non-blocking delete for visitors collection
+    deleteDoc(doc(db, "visitors", visitorId))
+      .catch((error) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: `visitors/${visitorId}`,
+          operation: 'delete',
+        }));
+      });
+    
+    toast({ title: "Entry Deleted", description: "The visitor log record has been removed." });
   };
 
   const formatDateTime = (isoString: string) => {
@@ -223,7 +241,7 @@ export default function AdminDashboard() {
                     isAuthorized ? "bg-accent text-accent-foreground border-accent" : "bg-neutral-200 text-neutral-600 border-neutral-300"
                   )}>
                     {isAuthorized ? <BadgeCheck className="w-3.5 h-3.5" /> : <GraduationCap className="w-3.5 h-3.5" />}
-                    {userRole}
+                    {isAuthorized ? "Admin" : "Student"}
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground font-medium flex items-center gap-2">
@@ -360,7 +378,7 @@ export default function AdminDashboard() {
                       <TableHead className="text-[10px] font-black uppercase text-black">College</TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-black">Purpose</TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-black">Identification</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase text-black text-center">Status</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-black text-center">Status & Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -387,19 +405,32 @@ export default function AdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
-                            <button
-                              disabled={!isAuthorized}
-                              onClick={() => toggleUserAccess(visitor)}
-                              className={cn(
-                                "inline-flex items-center px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all",
-                                isBlocked 
-                                  ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 cursor-pointer" 
-                                  : "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 cursor-pointer",
-                                !isAuthorized && "opacity-50 cursor-not-allowed"
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                disabled={!isAuthorized}
+                                onClick={() => toggleUserAccess(visitor)}
+                                className={cn(
+                                  "inline-flex items-center px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all",
+                                  isBlocked 
+                                    ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 cursor-pointer" 
+                                    : "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 cursor-pointer",
+                                  !isAuthorized && "opacity-50 cursor-not-allowed"
+                                )}
+                              >
+                                {isBlocked ? "Blocked" : "Active"}
+                              </button>
+                              
+                              {isAuthorized && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors"
+                                  onClick={() => deleteVisitor(visitor.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
                               )}
-                            >
-                              {isBlocked ? "Blocked" : "Active"}
-                            </button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
