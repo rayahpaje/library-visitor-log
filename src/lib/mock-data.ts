@@ -16,15 +16,18 @@ export type BlockedUser = {
   dateBlocked: string;
 };
 
+// We use static ISO strings here to avoid hydration mismatches between server and client.
+const STATIC_NOW = "2024-05-24T10:30:00.000Z";
+
 export const MOCK_VISITORS: Visitor[] = [
-  { id: 'v1', name: 'Caspian Anderson', institutionalId: '2021-1001', college: 'College of Engineering', purpose: 'Research in thesis', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v2', name: 'Elaria Smith', institutionalId: '2022-2045', college: 'College of Arts', purpose: 'Research in thesis', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v3', name: 'Althea Soleil', institutionalId: '2020-0552', college: 'College of Nursing', purpose: 'Research in thesis', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v4', name: 'Luna Belle Blake', institutionalId: '2023-3001', college: 'College of Business', purpose: 'Reading books', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v5', name: 'Aiden Blake', institutionalId: '2021-9988', college: 'College of Computing', purpose: 'Use of computer', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v6', name: 'Elena Gilbert', institutionalId: '2022-5566', college: 'College of Nursing', purpose: 'Reading books', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v7', name: 'Mateo Gabriel Silva', institutionalId: '2021-4422', college: 'College of Computing', purpose: 'Use of computer', timeIn: new Date().toISOString(), status: 'Active' },
-  { id: 'v8', name: 'Sofia Isabel Luna', institutionalId: '2022-1199', college: 'College of Arts', purpose: 'Doing assignments', timeIn: new Date().toISOString(), status: 'Active' },
+  { id: 'v1', name: 'Caspian Anderson', institutionalId: '2021-1001', college: 'College of Engineering', purpose: 'Research in thesis', timeIn: STATIC_NOW, status: 'Active' },
+  { id: 'v2', name: 'Elaria Smith', institutionalId: '2022-2045', college: 'College of Arts', purpose: 'Research in thesis', timeIn: STATIC_NOW, status: 'Active' },
+  { id: 'v3', name: 'Althea Soleil', institutionalId: '2020-0552', college: 'College of Nursing', purpose: 'Research in thesis', timeIn: STATIC_NOW, status: 'Active' },
+  { id: 'v4', name: 'Luna Belle Blake', institutionalId: '2023-3001', college: 'College of Business', purpose: 'Reading books', timeIn: STATIC_NOW, status: 'Active' },
+  { id: 'v5', name: 'Aiden Blake', institutionalId: '2021-9988', college: 'College of Computing', purpose: 'Use of computer', timeIn: STATIC_NOW, status: 'Active' },
+  { id: 'v6', name: 'Elena Gilbert', institutionalId: '2022-5566', college: 'College of Nursing', purpose: 'Reading books', timeIn: STATIC_NOW, status: 'Active' },
+  { id: 'v7', name: 'Mateo Gabriel Silva', institutionalId: '2021-4422', college: 'College of Computing', purpose: 'Use of computer', timeIn: STATIC_NOW, status: 'Active' },
+  { id: 'v8', name: 'Sofia Isabel Luna', institutionalId: '2022-1199', college: 'College of Arts', purpose: 'Doing assignments', timeIn: STATIC_NOW, status: 'Active' },
 ];
 
 export const MOCK_BLOCKED: BlockedUser[] = [

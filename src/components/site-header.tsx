@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -76,20 +75,20 @@ export function SiteHeader() {
         ) : (
           <>
             {!isAdminPath && (
-              <Link href="/admin/login">
-                <Button variant="outline" className="bg-[#3D5C4E] border-none text-white hover:bg-[#324B40] gap-2 rounded-full px-6 font-bold uppercase text-[10px] tracking-widest h-10 shadow-md">
+              <Button asChild variant="outline" className="bg-[#3D5C4E] border-none text-white hover:bg-[#324B40] gap-2 rounded-full px-6 font-bold uppercase text-[10px] tracking-widest h-10 shadow-md">
+                <Link href="/admin/login">
                   <UserCircle className="w-4 h-4" />
                   ADMIN LOG
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             )}
             
             {isAdminPath && !user && (
-              <Link href="/">
-                <Button variant="outline" className="bg-transparent border-white/40 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] rounded-full h-10 px-6">
+              <Button asChild variant="outline" className="bg-transparent border-white/40 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] rounded-full h-10 px-6">
+                <Link href="/">
                   VISITOR PORTAL
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             )}
           </>
         )}

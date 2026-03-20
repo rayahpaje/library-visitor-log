@@ -31,22 +31,25 @@ export function AdminSidebar() {
 
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => (
-          <Link
+          <Button
             key={item.href}
-            href={item.href}
+            asChild
+            variant="ghost"
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
+              "w-full justify-start gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
               pathname === item.href
-                ? "bg-primary text-white shadow-md"
+                ? "bg-primary text-white shadow-md hover:bg-primary/90 hover:text-white"
                 : "text-muted-foreground hover:bg-secondary hover:text-primary"
             )}
           >
-            <item.icon className={cn(
-              "w-5 h-5",
-              pathname === item.href ? "text-white" : "text-muted-foreground group-hover:text-primary"
-            )} />
-            {item.name}
-          </Link>
+            <Link href={item.href}>
+              <item.icon className={cn(
+                "w-5 h-5",
+                pathname === item.href ? "text-white" : "text-muted-foreground group-hover:text-primary"
+              )} />
+              {item.name}
+            </Link>
+          </Button>
         ))}
       </nav>
 
@@ -55,12 +58,12 @@ export function AdminSidebar() {
           <Settings className="w-5 h-5 mr-3" />
           Settings
         </Button>
-        <Link href="/">
-          <Button variant="ghost" className="w-full justify-start text-destructive hover:bg-destructive/5">
+        <Button asChild variant="ghost" className="w-full justify-start text-destructive hover:bg-destructive/5">
+          <Link href="/">
             <LogOut className="w-5 h-5 mr-3" />
             Logout
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );
