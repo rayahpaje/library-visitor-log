@@ -9,11 +9,10 @@ import {
   Ban, 
   Monitor,
   Search,
-  FileText,
-  ShieldCheck,
-  User as UserIcon,
   BadgeCheck,
-  CalendarDays
+  CalendarDays,
+  User as UserIcon,
+  ShieldCheck
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -110,8 +109,6 @@ export default function AdminDashboard() {
     const isAlreadyBlocked = blockedList.find(b => b.institutionalId === visitor.institutionalId);
     if (isAlreadyBlocked) return;
 
-    setSessionUnblockedIds(prev => prev.filter(id => id !== visitor.institutionalId));
-
     const blockData = {
       name: visitor.name,
       institutionalId: visitor.institutionalId,
@@ -128,28 +125,7 @@ export default function AdminDashboard() {
         }));
       });
       
-    toast({ title: "Student Blocked", description: `${visitor.name} has been restricted.` });
-  };
-
-  const handleUnblock = async (blockedUser: any) => {
-    setSessionUnblockedIds(prev => [...prev, blockedUser.institutionalId]);
-    if (!db) return;
-
-    const q = query(collection(db, "blockList"), where("institutionalId", "==", blockedUser.institutionalId));
-    getDocs(q).then((querySnapshot) => {
-      if (!querySnapshot.empty) {
-        querySnapshot.forEach((docSnap) => {
-          deleteDoc(doc(db, "blockList", docSnap.id)).catch(async () => {
-            errorEmitter.emit("permission-error", new FirestorePermissionError({
-              path: `blockList/${docSnap.id}`,
-              operation: "delete"
-            }));
-          });
-        });
-      }
-    });
-    
-    toast({ title: "Access Restored", description: `${blockedUser.name} is now ACTIVE.` });
+    toast({ title: "Access Restricted", description: `${visitor.name} has been blocked.` });
   };
 
   const formatDateTime = (isoString: string) => {
@@ -219,16 +195,16 @@ export default function AdminDashboard() {
                 <span className="text-[10px] font-bold uppercase tracking-tight">Verified Portal</span>
               </div>
               <Button variant="outline" size="sm" className="rounded-full font-bold uppercase text-[10px] tracking-widest" asChild>
-                <Link href="/admin/logs">View Activity Reports</Link>
+                <Link href="/admin/logs">Detailed Logs</Link>
               </Button>
             </div>
           </div>
         ) : !isUserLoading && (
           <div className="bg-white border border-black/5 shadow-sm rounded-2xl p-12 text-center">
-             <h3 className="text-xl font-bold text-primary mb-2">Restricted Access</h3>
-             <p className="text-muted-foreground mb-6">Please log in to access the library dashboard.</p>
+             <h3 className="text-xl font-bold text-primary mb-2">Staff Access Only</h3>
+             <p className="text-muted-foreground mb-6">Please sign in to view administrative data.</p>
              <Button className="rounded-full px-8 bg-primary font-bold uppercase tracking-widest text-xs h-11" asChild>
-                <Link href="/admin/login">Staff Portal Login</Link>
+                <Link href="/admin/login">Log In</Link>
              </Button>
           </div>
         )}
@@ -236,17 +212,17 @@ export default function AdminDashboard() {
         {user && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card className="border-none shadow-sm rounded-xl bg-white transition-all hover:shadow-md">
+              <Card className="border-none shadow-sm rounded-xl bg-white">
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-black/80">
                     <Users className="w-5 h-5" />
-                    <span className="text-sm font-bold uppercase tracking-tight">Today's Logs</span>
+                    <span className="text-sm font-bold uppercase tracking-tight">Today</span>
                   </div>
                   <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.today : "--"}</h3>
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm rounded-xl bg-white transition-all hover:shadow-md">
+              <Card className="border-none shadow-sm rounded-xl bg-white">
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-black/80">
                     <TrendingUp className="w-5 h-5 text-green-600" />
@@ -256,21 +232,21 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm rounded-xl bg-white transition-all hover:shadow-md">
+              <Card className="border-none shadow-sm rounded-xl bg-white">
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-destructive">
                     <Ban className="w-5 h-5" />
-                    <span className="text-sm font-bold uppercase tracking-tight">Blocked Users</span>
+                    <span className="text-sm font-bold uppercase tracking-tight">Blocked</span>
                   </div>
                   <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.blocked : "--"}</h3>
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm rounded-xl bg-white transition-all hover:shadow-md">
+              <Card className="border-none shadow-sm rounded-xl bg-white">
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-primary">
                     <Monitor className="w-5 h-5" />
-                    <span className="text-sm font-bold uppercase tracking-tight">Total History</span>
+                    <span className="text-sm font-bold uppercase tracking-tight">All Logs</span>
                   </div>
                   <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? allVisitors.length : "--"}</h3>
                 </CardContent>
@@ -279,82 +255,81 @@ export default function AdminDashboard() {
 
             <Card className="border border-black/5 shadow-sm rounded-xl bg-white">
               <div className="p-6 border-b border-black/5 flex flex-col md:flex-row items-center justify-between gap-4">
-                <h2 className="text-lg font-black text-black uppercase tracking-tight">Library Activity Log</h2>
+                <h2 className="text-lg font-black text-black uppercase tracking-tight">Live Activity Log</h2>
                 <div className="relative w-full md:w-80">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input 
-                    placeholder="Search by Name, ID, or College..." 
-                    className="pl-9 h-10 text-xs border-muted-foreground/30 bg-white rounded-md"
+                    placeholder="Search Logs..." 
+                    className="pl-9 h-10 text-xs border-muted-foreground/30 bg-white"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
               </div>
 
-              <div className="p-6">
-                <div className="rounded-xl border border-black/5 overflow-hidden shadow-sm overflow-x-auto">
-                  <Table>
-                    <TableHeader className="bg-[#F4F4F4]">
-                      <TableRow className="border-none">
-                        <TableHead className="text-[10px] font-black uppercase text-black py-4 w-[140px]">Time In & Date</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase text-black min-w-[150px]">Name</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase text-black min-w-[200px]">College / Office</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase text-black min-w-[150px]">Purpose</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase text-black">Student/Admin</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase text-black text-center">Status (Active/Blocked)</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredVisitors.map((visitor) => {
-                        const isBlocked = blockedList.some(b => b.institutionalId === visitor.institutionalId);
-                        const isStaff = visitor.college?.includes("Staff") || visitor.college?.includes("Faculty");
-                        return (
-                          <TableRow 
-                            key={visitor.id || visitor.institutionalId} 
-                            className={cn(
-                              "hover:bg-muted/10 border-black/5 transition-colors cursor-pointer",
-                              isBlocked && "bg-red-50/30"
-                            )}
-                            onClick={() => userRole === "Library Staff" && !isBlocked && handleBlock(visitor)}
-                          >
-                            <TableCell className="py-4">{formatDateTime(visitor.timeIn)}</TableCell>
-                            <TableCell>
-                              <div className="text-sm font-black text-black">{visitor.name}</div>
-                              <div className="text-[9px] font-bold text-muted-foreground uppercase">{visitor.institutionalId}</div>
-                            </TableCell>
-                            <TableCell className="text-xs font-medium text-black/70">{visitor.college}</TableCell>
-                            <TableCell className="text-xs font-medium italic text-primary">"{visitor.purpose}"</TableCell>
-                            <TableCell>
-                              <span className={cn(
-                                "text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-tighter",
-                                isStaff ? "bg-accent/20 text-accent-foreground" : "bg-primary/10 text-primary"
-                              )}>
-                                {isStaff ? "Admin/Staff" : "Student"}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className={cn(
-                                "inline-flex items-center px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider shadow-sm",
-                                isBlocked 
-                                  ? "bg-red-50 text-red-600 border border-red-200" 
-                                  : "bg-green-50 text-green-700 border border-green-200"
-                              )}>
-                                {isBlocked ? "BLOCKED" : "ACTIVE"}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      {filteredVisitors.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={6} className="py-20 text-center text-muted-foreground italic">
-                            No library entries found matching your search criteria.
+              <div className="p-6 overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-[#F4F4F4]">
+                    <TableRow className="border-none">
+                      <TableHead className="text-[10px] font-black uppercase text-black py-4">Time In & Date</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-black">Name</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-black">College / Office</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-black">Purpose</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-black">Student/Admin</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-black text-center">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredVisitors.map((visitor) => {
+                      const isBlocked = blockedList.some(b => b.institutionalId === visitor.institutionalId);
+                      const isStaff = visitor.college?.includes("Staff") || visitor.college?.includes("Faculty") || visitor.institutionalId?.endsWith("@neu.edu.ph");
+                      
+                      return (
+                        <TableRow 
+                          key={visitor.id || visitor.institutionalId} 
+                          className={cn(
+                            "hover:bg-muted/10 border-black/5 transition-colors cursor-pointer",
+                            isBlocked && "bg-red-50/30"
+                          )}
+                          onClick={() => userRole === "Library Staff" && !isBlocked && handleBlock(visitor)}
+                        >
+                          <TableCell className="py-4">{formatDateTime(visitor.timeIn)}</TableCell>
+                          <TableCell>
+                            <div className="text-sm font-black text-black">{visitor.name}</div>
+                            <div className="text-[9px] font-bold text-muted-foreground uppercase">{visitor.institutionalId}</div>
+                          </TableCell>
+                          <TableCell className="text-xs font-medium text-black/70">{visitor.college}</TableCell>
+                          <TableCell className="text-xs font-medium italic text-primary">"{visitor.purpose}"</TableCell>
+                          <TableCell>
+                            <span className={cn(
+                              "text-[9px] font-black px-2 py-0.5 rounded uppercase",
+                              isStaff ? "bg-accent/20 text-accent-foreground" : "bg-primary/10 text-primary"
+                            )}>
+                              {isStaff ? "Admin/Staff" : "Student"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className={cn(
+                              "inline-flex items-center px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider",
+                              isBlocked 
+                                ? "bg-red-50 text-red-600 border border-red-200" 
+                                : "bg-green-50 text-green-700 border border-green-200"
+                            )}>
+                              {isBlocked ? "BLOCKED" : "ACTIVE"}
+                            </div>
                           </TableCell>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                      );
+                    })}
+                    {filteredVisitors.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-20 text-center text-muted-foreground italic">
+                          No matching records found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </div>
             </Card>
           </>

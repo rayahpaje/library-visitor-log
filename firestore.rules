@@ -3,42 +3,34 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * NEU LIBRARY VISITOR MANAGEMENT - PROTOTYPE RULES
+     * NEU LIBRARY VISITOR MANAGEMENT - SECURITY RULES
      * 
-     * These rules are optimized for the prototype phase, allowing authenticated
-     * staff members to read and write institutional records.
+     * Allows public creation of visitor logs for the entry portal.
+     * Restricted data (blockList, full visitor history) requires staff authentication.
      */
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Admin Roles - allow authenticated users to check status
+    // Admin Roles
     match /roles_admin/{adminId} {
       allow get, list: if isSignedIn();
-      allow write: if false; // Managed via console or functions
+      allow write: if false; 
     }
 
-    // Predefined Purposes
-    match /purposes/{purposeId} {
-      allow get, list: if true;
-      allow write: if isSignedIn();
-    }
-
-    // Visitor Profiles and Logs
+    // Visitor Entries
     match /visitors/{visitorId} {
+      // Allow library staff to view all logs
       allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
+      // Allow the public portal to create new logs
+      allow create: if true;
+      // Only staff can update or delete entry records
+      allow update, delete: if isSignedIn();
     }
 
-    // Security Block List (formerly blockEntries)
+    // Security Block List
     match /blockList/{blockId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn();
-    }
-
-    // Historical Logs
-    match /visitLogs/{visitLogId} {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isSignedIn();
     }
