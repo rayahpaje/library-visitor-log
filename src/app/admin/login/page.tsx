@@ -59,15 +59,16 @@ export default function AdminLogin() {
           <div className="space-y-6 mb-10">
             <h2 className="text-3xl font-bold tracking-tight uppercase">WELCOME TO NEU LIBRARY!</h2>
             <div className="space-y-2">
-              <h3 className="text-2xl font-black text-[#FFD600] tracking-wide uppercase">STAFF LOGIN</h3>
               <p className="text-white/80 text-sm font-medium">Please sign in with your NEU Institutional Email</p>
             </div>
           </div>
 
           {errorType === "config" && (
             <Alert className="mb-8 text-left bg-blue-50 text-blue-900 border-blue-200">
-              <Info className="h-5 w-5 text-blue-700" />
-              <AlertTitle className="font-bold text-sm">Action Required: Enable Google Provider</AlertTitle>
+              <div className="flex items-center gap-3">
+                <Info className="h-5 w-5 text-blue-700" />
+                <AlertTitle className="font-bold text-sm">Action Required: Enable Google Provider</AlertTitle>
+              </div>
               <AlertDescription className="text-xs mt-1 leading-relaxed">
                 To allow signing in, you must go to the <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold">Firebase Console</a>, navigate to <b>Authentication &gt; Sign-in method</b>, and enable the <b>Google</b> provider.
               </AlertDescription>
@@ -76,8 +77,10 @@ export default function AdminLogin() {
 
           {errorType === "other" && (
             <Alert variant="destructive" className="mb-8 text-left bg-red-50 text-red-900 border-red-200">
-              <AlertCircle className="h-5 w-5 text-red-700" />
-              <AlertTitle className="font-bold text-sm">Authentication Error</AlertTitle>
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-red-700" />
+                <AlertTitle className="font-bold text-sm">Authentication Error</AlertTitle>
+              </div>
               <AlertDescription className="text-xs mt-1">
                 {errorMessage}
               </AlertDescription>
