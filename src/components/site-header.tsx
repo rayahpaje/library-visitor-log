@@ -84,7 +84,7 @@ export function SiteHeader() {
               </Link>
             )}
             
-            {isAdminPath && (
+            {isAdminPath && !user && (
               <Link href="/">
                 <Button variant="outline" className="bg-transparent border-white/40 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] rounded-full h-10 px-6">
                   VISITOR PORTAL

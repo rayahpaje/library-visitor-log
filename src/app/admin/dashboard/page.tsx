@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { useCollection, useFirestore, useUser } from "@/firebase";
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { 
   collection, 
   addDoc, 
@@ -53,8 +53,8 @@ export default function AdminDashboard() {
     setIsMounted(true);
   }, []);
 
-  const visitorCollection = useMemo(() => db ? collection(db, "visitors") : null, [db]);
-  const blockCollection = useMemo(() => db ? collection(db, "blockList") : null, [db]);
+  const visitorCollection = useMemoFirebase(() => db ? collection(db, "visitors") : null, [db]);
+  const blockCollection = useMemoFirebase(() => db ? collection(db, "blockList") : null, [db]);
 
   const { data: dbVisitors } = useCollection(visitorCollection);
   const { data: dbBlocked } = useCollection(blockCollection);
@@ -70,7 +70,6 @@ export default function AdminDashboard() {
   const blockedList = useMemo(() => {
     const firestoreData = dbBlocked || [];
     const mockData = MOCK_BLOCKED.filter(m => !firestoreData.find(f => f.institutionalId === m.institutionalId));
-    // Filter out users who were unblocked in this session (demo purposes)
     return [...firestoreData, ...mockData].filter(u => !sessionUnblockedIds.includes(u.institutionalId));
   }, [dbBlocked, sessionUnblockedIds]);
 
@@ -95,7 +94,6 @@ export default function AdminDashboard() {
     const isAlreadyBlocked = blockedList.find(b => b.institutionalId === visitor.institutionalId);
     if (isAlreadyBlocked) return;
 
-    // Remove from session unblocked if they were there
     setSessionUnblockedIds(prev => prev.filter(id => id !== visitor.institutionalId));
 
     const blockData = {
@@ -118,12 +116,10 @@ export default function AdminDashboard() {
   };
 
   const handleUnblock = async (blockedUser: any) => {
-    // Optimistically remove from UI
     setSessionUnblockedIds(prev => [...prev, blockedUser.institutionalId]);
 
     if (!db) return;
 
-    // Remove from Firestore if exists
     const q = query(collection(db, "blockList"), where("institutionalId", "==", blockedUser.institutionalId));
     getDocs(q).then((querySnapshot) => {
       if (!querySnapshot.empty) {
