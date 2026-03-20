@@ -16,8 +16,7 @@ import {
   Filter,
   GraduationCap,
   Lock,
-  UserCheck,
-  Trash2
+  UserCheck
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -52,8 +51,6 @@ import { cn } from "@/lib/utils";
 import { MOCK_VISITORS, MOCK_BLOCKED } from "@/lib/mock-data";
 import { toast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 import Link from "next/link";
 
 const COLLEGES = [
@@ -184,21 +181,6 @@ export default function AdminDashboard() {
 
       toast({ variant: "destructive", title: "Access Restricted", description: `${visitor.name} is now Blocked.` });
     }
-  };
-
-  const deleteVisitor = async (visitorId: string) => {
-    if (!db || !isAuthorized || !visitorId) return;
-    
-    // Non-blocking delete for visitors collection
-    deleteDoc(doc(db, "visitors", visitorId))
-      .catch((error) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: `visitors/${visitorId}`,
-          operation: 'delete',
-        }));
-      });
-    
-    toast({ title: "Entry Deleted", description: "The visitor log record has been removed." });
   };
 
   const formatDateTime = (isoString: string) => {
@@ -378,7 +360,7 @@ export default function AdminDashboard() {
                       <TableHead className="text-[10px] font-black uppercase text-black">College</TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-black">Purpose</TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-black">Identification</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase text-black text-center">Status & Actions</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-black text-center">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -405,32 +387,19 @@ export default function AdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                disabled={!isAuthorized}
-                                onClick={() => toggleUserAccess(visitor)}
-                                className={cn(
-                                  "inline-flex items-center px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all",
-                                  isBlocked 
-                                    ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 cursor-pointer" 
-                                    : "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 cursor-pointer",
-                                  !isAuthorized && "opacity-50 cursor-not-allowed"
-                                )}
-                              >
-                                {isBlocked ? "Blocked" : "Active"}
-                              </button>
-                              
-                              {isAuthorized && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors"
-                                  onClick={() => deleteVisitor(visitor.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
+                            <button
+                              disabled={!isAuthorized}
+                              onClick={() => toggleUserAccess(visitor)}
+                              className={cn(
+                                "inline-flex items-center px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all",
+                                isBlocked 
+                                  ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 cursor-pointer" 
+                                  : "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 cursor-pointer",
+                                !isAuthorized && "opacity-50 cursor-not-allowed"
                               )}
-                            </div>
+                            >
+                              {isBlocked ? "Blocked" : "Active"}
+                            </button>
                           </TableCell>
                         </TableRow>
                       );
