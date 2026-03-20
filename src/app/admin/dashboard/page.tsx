@@ -12,7 +12,8 @@ import {
   FileText,
   ShieldCheck,
   User as UserIcon,
-  BadgeCheck
+  BadgeCheck,
+  ArrowRightLeft
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ import { toast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
 
 export default function AdminDashboard() {
   const db = useFirestore();
@@ -95,7 +97,7 @@ export default function AdminDashboard() {
   const userRole = useMemo(() => {
     if (!user) return "Guest";
     if (user.email?.endsWith("@neu.edu.ph")) return "Library Staff";
-    return "Student / Visitor";
+    return "Visitor";
   }, [user]);
 
   const handleBlock = async (visitor: any) => {
@@ -147,8 +149,8 @@ export default function AdminDashboard() {
   };
 
   const formatTime = (isoString: string) => {
-    if (!isMounted) return "10:30 am";
-    try { return format(parseISO(isoString), "hh:mm a").toLowerCase(); } catch { return "10:30 am"; }
+    if (!isMounted) return "--:--";
+    try { return format(parseISO(isoString), "hh:mm a").toLowerCase(); } catch { return "N/A"; }
   };
 
   return (
@@ -158,7 +160,7 @@ export default function AdminDashboard() {
       <main className="flex-1 p-8 max-w-[1400px] mx-auto w-full space-y-8">
         {/* User Identity Section */}
         {isMounted && user ? (
-          <div className="bg-white border-none shadow-sm rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative border border-black/5">
+          <div className="bg-white border border-black/5 shadow-sm rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl -z-0" />
             
             <div className="flex items-center gap-6 relative z-10">
@@ -170,9 +172,9 @@ export default function AdminDashboard() {
               </Avatar>
               <div className="space-y-1.5">
                 <div className="flex items-center gap-3">
-                  <h2 className="text-3xl font-black text-primary tracking-tight">{user.displayName || "Welcome User"}</h2>
+                  <h2 className="text-3xl font-black text-primary tracking-tight">{user.displayName || "Welcome"}</h2>
                   <div className={cn(
-                    "px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md border flex items-center gap-1.5",
+                    "px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md border flex items-center gap-1.5 shadow-sm",
                     userRole === "Library Staff" 
                       ? "bg-accent text-accent-foreground border-accent" 
                       : "bg-primary/10 text-primary border-primary/20"
@@ -187,42 +189,44 @@ export default function AdminDashboard() {
                 </p>
                 <div className="flex items-center gap-2 pt-1">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-[10px] font-bold text-green-700 uppercase tracking-widest">Authenticated Session</span>
+                  <span className="text-[10px] font-bold text-green-700 uppercase tracking-widest">Active Session: {userRole} Portal</span>
                 </div>
               </div>
             </div>
 
-            <div className="hidden md:flex flex-col items-end gap-3 text-right relative z-10">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">Access Level</span>
-                <span className="text-lg font-black text-primary uppercase">{userRole === "Library Staff" ? "Full Administrative" : "Visitor Records Only"}</span>
-              </div>
-              <div className="flex items-center gap-2 text-primary/60">
+            <div className="flex flex-col items-end gap-3 text-right relative z-10">
+              <Button asChild variant="outline" className="border-primary/20 text-primary hover:bg-primary/5 h-10 px-6 font-bold uppercase tracking-widest text-[10px] rounded-full shadow-sm gap-2" suppressHydrationWarning>
+                <Link href="/">
+                  <ArrowRightLeft className="w-4 h-4" />
+                  Switch to Visitor Portal
+                </Link>
+              </Button>
+              <div className="flex items-center gap-2 text-primary/40">
                 <ShieldCheck className="w-5 h-5" />
-                <span className="text-[10px] font-bold uppercase tracking-tight">Secured via Firebase Auth</span>
+                <span className="text-[10px] font-bold uppercase tracking-tight">Verified by NEU Auth</span>
               </div>
             </div>
           </div>
         ) : !isUserLoading && (
-          <div className="bg-white border-none shadow-sm rounded-2xl p-12 text-center border border-black/5">
-             <h3 className="text-xl font-bold text-primary mb-2">Access Restricted</h3>
-             <p className="text-muted-foreground mb-6">Please log in to view the dashboard and manage records.</p>
-             <Button className="rounded-full px-8 bg-primary font-bold uppercase tracking-widest text-xs" asChild>
-                <a href="/admin/login">Log In to System</a>
+          <div className="bg-white border border-black/5 shadow-sm rounded-2xl p-12 text-center">
+             <h3 className="text-xl font-bold text-primary mb-2">Administrative Access Restricted</h3>
+             <p className="text-muted-foreground mb-6">Please log in with your staff credentials to access the library dashboard.</p>
+             <Button className="rounded-full px-8 bg-primary font-bold uppercase tracking-widest text-xs h-11" asChild suppressHydrationWarning>
+                <Link href="/admin/login">Staff Login Portal</Link>
              </Button>
           </div>
         )}
 
-        {/* Dashboard Content - Only visible if staff or logged in */}
+        {/* Dashboard Content */}
         {user && (
           <>
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h2 className="text-2xl font-black text-[#004D40] uppercase tracking-tight">
-                  {userRole === "Library Staff" ? "Admin Operations" : "Visitor Overview"}
+                  {userRole === "Library Staff" ? "Admin Operations" : "Attendance Dashboard"}
                 </h2>
                 <p className="text-sm text-muted-foreground font-medium italic">
-                  {userRole === "Library Staff" ? "Real-time monitoring and security management" : "Your recent library attendance activity"}
+                  {userRole === "Library Staff" ? "Real-time monitoring and security management" : "Your recent library visitation logs"}
                 </p>
               </div>
             </div>
@@ -232,7 +236,7 @@ export default function AdminDashboard() {
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-black/80">
                     <Users className="w-5 h-5" />
-                    <span className="text-sm font-bold uppercase tracking-tight">Today's Total</span>
+                    <span className="text-sm font-bold uppercase tracking-tight">Today's Logs</span>
                   </div>
                   <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.today : 0}</h3>
                 </CardContent>
@@ -252,7 +256,7 @@ export default function AdminDashboard() {
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-destructive">
                     <Ban className="w-5 h-5" />
-                    <span className="text-sm font-bold uppercase tracking-tight">Security Alert</span>
+                    <span className="text-sm font-bold uppercase tracking-tight">Blocked Users</span>
                   </div>
                   <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.blocked : 0}</h3>
                 </CardContent>
@@ -262,7 +266,7 @@ export default function AdminDashboard() {
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-2">
                   <div className="flex items-center gap-2 text-primary">
                     <Monitor className="w-5 h-5" />
-                    <span className="text-sm font-bold uppercase tracking-tight">Live Sessions</span>
+                    <span className="text-sm font-bold uppercase tracking-tight">Active Sessions</span>
                   </div>
                   <h3 className="text-5xl font-black text-black tracking-tighter">{isMounted ? stats.active : 0}</h3>
                 </CardContent>
@@ -273,11 +277,11 @@ export default function AdminDashboard() {
               <div className="lg:col-span-2 space-y-8">
                 <Card className="border border-black/5 shadow-sm rounded-xl bg-white">
                   <div className="p-6 border-b border-black/5 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <h2 className="text-lg font-black text-black uppercase tracking-tight">Visitor Management Activity</h2>
+                    <h2 className="text-lg font-black text-black uppercase tracking-tight">Library Activity Log</h2>
                     {userRole === "Library Staff" && (
                       <Button className="bg-[#004D40] hover:bg-[#003d33] text-white rounded-lg h-10 gap-2 px-6 shadow-sm font-bold uppercase text-[10px] tracking-widest border-none" suppressHydrationWarning>
                         <FileText className="w-4 h-4" />
-                        Export Log Report
+                        Export Report
                       </Button>
                     )}
                   </div>
@@ -310,10 +314,10 @@ export default function AdminDashboard() {
                       <Table>
                         <TableHeader className="bg-[#F4F4F4]">
                           <TableRow className="border-none hover:bg-transparent">
-                            <TableHead className="text-xs font-bold text-black py-4">Arrival</TableHead>
+                            <TableHead className="text-xs font-bold text-black py-4">Time In</TableHead>
                             <TableHead className="text-xs font-bold text-black">Identity</TableHead>
                             <TableHead className="text-xs font-bold text-black">College</TableHead>
-                            <TableHead className="text-xs font-bold text-black text-center">Security Status</TableHead>
+                            <TableHead className="text-xs font-bold text-black text-center">Security</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -357,7 +361,7 @@ export default function AdminDashboard() {
               <div className="space-y-6">
                 <Card className="border border-black/5 shadow-sm rounded-xl bg-white overflow-hidden">
                   <div className="p-5 border-b border-black/5 bg-[#F4F4F4]">
-                    <h3 className="text-xs font-black text-black uppercase tracking-widest">Active Block List</h3>
+                    <h3 className="text-xs font-black text-black uppercase tracking-widest">Active Restrictions</h3>
                   </div>
                   <div className="p-0">
                     <Table>
@@ -401,7 +405,7 @@ export default function AdminDashboard() {
                       <h4 className="text-sm font-black uppercase tracking-tight">Security Memo</h4>
                     </div>
                     <p className="text-xs leading-relaxed text-white/80 font-medium">
-                      Student accounts are flagged automatically for repeated policy violations. Only Library Staff are authorized to restore access through this portal.
+                      Student accounts are flagged automatically for repeated policy violations. Use this portal to review logs and restore library access for verified students.
                     </p>
                   </CardContent>
                 </Card>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { LogOut, ShieldCheck, LogIn, LayoutDashboard } from "lucide-react";
+import { LogOut, ShieldCheck, LogIn, LayoutDashboard, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -28,8 +28,8 @@ export function SiteHeader() {
 
   const userRole = useMemo(() => {
     if (!user) return null;
-    if (user.email?.endsWith("@neu.edu.ph")) return "Staff Access";
-    return "Student Access";
+    if (user.email?.endsWith("@neu.edu.ph")) return "Library Staff";
+    return "Visitor";
   }, [user]);
 
   const handleLogout = async () => {
@@ -74,29 +74,32 @@ export function SiteHeader() {
       <div className="flex items-center gap-4">
         {isMounted && user ? (
           <div className="flex items-center gap-4">
+            {/* Context Switcher for Staff */}
+            {userRole === "Library Staff" && (
+              <Button asChild variant="outline" className="hidden md:flex bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2" suppressHydrationWarning>
+                <Link href={isAdminPath ? "/" : "/admin/dashboard"}>
+                  {isAdminPath ? <UserCircle className="w-3.5 h-3.5" /> : <LayoutDashboard className="w-3.5 h-3.5" />}
+                  {isAdminPath ? "Visitor Portal" : "Admin Portal"}
+                </Link>
+              </Button>
+            )}
+
             <div className="hidden md:flex flex-col items-end -space-y-1">
               <span className="text-sm font-bold text-[#FFD600]">{user.displayName || "Member"}</span>
               <span className={cn(
                 "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest mt-1",
-                userRole === "Staff Access" ? "bg-accent/20 text-accent border border-accent/30" : "bg-white/10 text-white/70"
+                userRole === "Library Staff" ? "bg-accent/20 text-accent border border-accent/30" : "bg-white/10 text-white/70"
               )}>
                 {userRole}
               </span>
             </div>
+            
             <Avatar className="h-10 w-10 border-2 border-white/20 shadow-sm">
               <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} />
               <AvatarFallback className="bg-white/10 text-white font-bold">
                 {user.displayName?.charAt(0) || "U"}
               </AvatarFallback>
             </Avatar>
-            
-            {userRole === "Staff Access" && !isAdminPath && (
-              <Button asChild variant="ghost" className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-full" suppressHydrationWarning>
-                <Link href="/admin/dashboard">
-                  <LayoutDashboard className="w-5 h-5" />
-                </Link>
-              </Button>
-            )}
 
             <Button 
               onClick={handleLogout}
@@ -113,7 +116,7 @@ export function SiteHeader() {
               <Button asChild variant="outline" className="bg-[#3D5C4E] border-none text-white hover:bg-[#324B40] gap-2 rounded-full px-6 font-bold uppercase text-[10px] tracking-widest h-10 shadow-md" suppressHydrationWarning>
                 <Link href="/admin/login">
                   <ShieldCheck className="w-4 h-4" />
-                  ADMIN PORTAL
+                  ADMIN LOGIN
                 </Link>
               </Button>
             )}
