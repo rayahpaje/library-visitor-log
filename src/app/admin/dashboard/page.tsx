@@ -153,7 +153,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F7F5] font-body flex flex-col">
+    <div className="min-h-screen bg-[#F4F7F5] font-body flex flex-col" suppressHydrationWarning>
       <SiteHeader />
       
       <main className="flex-1 p-8 max-w-[1400px] mx-auto w-full space-y-8">
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
                 </p>
                 <div className="flex items-center gap-2 pt-1">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-[10px] font-bold text-green-700 uppercase tracking-widest">Active Session: {userRole} Portal</span>
+                  <span className="text-[10px] font-bold text-green-700 uppercase tracking-widest">Active Session: {userRole} Dashboard</span>
                 </div>
               </div>
             </div>
@@ -202,14 +202,14 @@ export default function AdminDashboard() {
               </Button>
               <div className="flex items-center gap-2 text-primary/40">
                 <ShieldCheck className="w-5 h-5" />
-                <span className="text-[10px] font-bold uppercase tracking-tight">Verified Staff Identity</span>
+                <span className="text-[10px] font-bold uppercase tracking-tight">Verified Administrative Identity</span>
               </div>
             </div>
           </div>
         ) : !isUserLoading && (
           <div className="bg-white border border-black/5 shadow-sm rounded-2xl p-12 text-center">
              <h3 className="text-xl font-bold text-primary mb-2">Administrative Access Restricted</h3>
-             <p className="text-muted-foreground mb-6">Please log in with your staff credentials to access the library dashboard.</p>
+             <p className="text-muted-foreground mb-6">Please log in with your official staff credentials to access the library dashboard.</p>
              <Button className="rounded-full px-8 bg-primary font-bold uppercase tracking-widest text-xs h-11" asChild suppressHydrationWarning>
                 <Link href="/admin/login">Staff Login Portal</Link>
              </Button>

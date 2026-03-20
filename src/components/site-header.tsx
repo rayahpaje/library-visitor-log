@@ -44,7 +44,7 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="bg-[#004D40] text-white py-4 px-6 md:px-10 flex items-center justify-between h-20 shadow-md z-50 sticky top-0">
+    <header className="bg-[#004D40] text-white py-4 px-6 md:px-10 flex items-center justify-between h-20 shadow-md z-50 sticky top-0" suppressHydrationWarning>
       <div className="flex items-center gap-4">
         <Link href="/" className="relative w-14 h-14 bg-white rounded-full flex items-center justify-center overflow-hidden border-2 border-white shadow-lg transition-transform hover:scale-105">
           {logo && (
@@ -79,7 +79,7 @@ export function SiteHeader() {
               <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2" suppressHydrationWarning>
                 <Link href={isAdminPath ? "/" : "/admin/dashboard"}>
                   {isAdminPath ? <ArrowRightLeft className="w-3.5 h-3.5" /> : <LayoutDashboard className="w-3.5 h-3.5" />}
-                  {isAdminPath ? "Switch to Visitor Portal" : "Switch to Admin Portal"}
+                  {isAdminPath ? "Visitor Portal" : "Admin Portal"}
                 </Link>
               </Button>
             )}
@@ -112,7 +112,14 @@ export function SiteHeader() {
           </div>
         ) : isMounted ? (
           <div className="flex items-center gap-3">
-            {!isAdminPath && (
+            {isAdminPath ? (
+              <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm" suppressHydrationWarning>
+                <Link href="/">
+                  <ArrowRightLeft className="w-4 h-4" />
+                  Visitor Portal
+                </Link>
+              </Button>
+            ) : (
               <Button asChild variant="outline" className="bg-[#3D5C4E] border-none text-white hover:bg-[#324B40] gap-2 rounded-full px-6 font-bold uppercase text-[10px] tracking-widest h-10 shadow-md" suppressHydrationWarning>
                 <Link href="/admin/login">
                   <ShieldCheck className="w-4 h-4" />
