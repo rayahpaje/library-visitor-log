@@ -15,7 +15,6 @@ import {
   Filter,
   GraduationCap,
   Lock,
-  UserCheck,
   Loader2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -79,7 +78,7 @@ const ADMIN_EMAILS = [
 
 export default function AdminDashboard() {
   const db = useFirestore();
-  const { user, isUserLoading } = useUser();
+  const { user, loading: isUserLoading } = useUser();
   const [searchTerm, setSearchTerm] = useState("");
   const [isMounted, setIsMounted] = useState(false);
   
@@ -227,11 +226,11 @@ export default function AdminDashboard() {
                     isAuthorized ? "bg-accent text-accent-foreground border-accent" : "bg-neutral-200 text-neutral-600 border-neutral-300"
                   )}>
                     {isAuthorized ? <BadgeCheck className="w-3.5 h-3.5" /> : <GraduationCap className="w-3.5 h-3.5" />}
-                    {isAuthorized ? "Admin" : "Student"}
+                    {userRole}
                   </div>
                 </div>
                 <div className="flex flex-col">
-                  <p className="text-sm text-primary font-black uppercase tracking-wider">{user.displayName || "Administrator"}</p>
+                  <p className="text-sm text-primary font-black uppercase tracking-wider">{user.displayName || "Member"}</p>
                   <p className="text-[11px] text-muted-foreground font-medium flex items-center gap-2">
                     <UserIcon className="w-3 h-3 text-primary" />
                     {user.email}
