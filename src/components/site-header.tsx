@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { LogOut, LayoutDashboard } from "lucide-react";
+import { LogOut, LayoutDashboard, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -19,6 +19,7 @@ export function SiteHeader() {
   const { user } = useUser();
   const auth = useAuth();
   const [isMounted, setIsMounted] = useState(false);
+  const isHome = pathname === "/";
   const isAdminPath = pathname.startsWith("/admin");
   const logo = PlaceHolderImages.find(img => img.id === "neu-logo");
 
@@ -65,51 +66,64 @@ export function SiteHeader() {
       </div>
 
       <div className="flex items-center gap-4">
-        {isMounted && user ? (
-          <div className="flex items-center gap-4">
-            {userRole === "Library Staff" && !isAdminPath && (
-              <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2" suppressHydrationWarning>
-                <Link href="/admin/dashboard">
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  Dashboard
+        {isMounted && (
+          <>
+            {!isHome && (
+              <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm" suppressHydrationWarning>
+                <Link href="/">
+                  <UserIcon className="w-3.5 h-3.5" />
+                  Visitor Portal
                 </Link>
               </Button>
             )}
 
-            <div className="hidden md:flex flex-col items-end -space-y-1">
-              <span className="text-sm font-bold text-accent">{user.displayName || "Member"}</span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest mt-1 bg-white/10 text-white/70 border border-white/10">
-                {userRole}
-              </span>
-            </div>
-            
-            <Avatar className="h-10 w-10 border-2 border-white/20 shadow-sm">
-              <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} />
-              <AvatarFallback className="bg-white/10 text-white font-bold">
-                {user.displayName?.charAt(0) || "U"}
-              </AvatarFallback>
-            </Avatar>
+            {user ? (
+              <div className="flex items-center gap-4">
+                {userRole === "Library Staff" && !isAdminPath && (
+                  <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2" suppressHydrationWarning>
+                    <Link href="/admin/dashboard">
+                      <LayoutDashboard className="w-3.5 h-3.5" />
+                      Dashboard
+                    </Link>
+                  </Button>
+                )}
 
-            <Button 
-              onClick={handleLogout}
-              variant="outline" 
-              className="bg-transparent border-white/40 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] rounded-full h-10 px-4"
-              suppressHydrationWarning
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        ) : isMounted ? (
-          <div className="flex items-center gap-3">
-             {!isAdminPath && (
-               <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm" suppressHydrationWarning>
-                  <Link href="/admin/login">
-                    Staff Portal
-                  </Link>
-               </Button>
-             )}
-          </div>
-        ) : null}
+                <div className="hidden md:flex flex-col items-end -space-y-1">
+                  <span className="text-sm font-bold text-accent">{user.displayName || "Member"}</span>
+                  <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest mt-1 bg-white/10 text-white/70 border border-white/10">
+                    {userRole}
+                  </span>
+                </div>
+                
+                <Avatar className="h-10 w-10 border-2 border-white/20 shadow-sm">
+                  <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} />
+                  <AvatarFallback className="bg-white/10 text-white font-bold">
+                    {user.displayName?.charAt(0) || "U"}
+                  </AvatarFallback>
+                </Avatar>
+
+                <Button 
+                  onClick={handleLogout}
+                  variant="outline" 
+                  className="bg-transparent border-white/40 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] rounded-full h-10 px-4"
+                  suppressHydrationWarning
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                 {!isAdminPath && (
+                   <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm" suppressHydrationWarning>
+                      <Link href="/admin/login">
+                        Staff Portal
+                      </Link>
+                   </Button>
+                 )}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </header>
   );
