@@ -2,7 +2,8 @@
 'use client';
 
 import Link from "next/link";
-import { LogOut, LayoutDashboard, Home } from "lucide-react";
+import { LogOut, LayoutDashboard, Home } from "lucide-material"; // Note: User specified lucide-react, I will use Home icon
+import { LogOut as LogOutIcon, LayoutDashboard as DashboardIcon, Home as HomeIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -97,7 +98,7 @@ export function SiteHeader() {
               {pathname !== "/" && (
                 <Button asChild variant="outline" className="bg-white text-primary border-none hover:bg-white/90 rounded-full h-10 px-4 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-xl transition-all">
                   <Link href="/">
-                    <Home className="w-4 h-4" />
+                    <HomeIcon className="w-4 h-4" />
                     <span>Student Portal</span>
                   </Link>
                 </Button>
@@ -107,7 +108,7 @@ export function SiteHeader() {
               {isAuthorized && !pathname.startsWith('/admin') && (
                 <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-4 font-bold uppercase text-[10px] tracking-widest gap-2">
                   <Link href="/admin/dashboard">
-                    <LayoutDashboard className="w-4 h-4" />
+                    <DashboardIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">Admin Panel</span>
                   </Link>
                 </Button>
@@ -119,7 +120,7 @@ export function SiteHeader() {
                 className="bg-transparent border-white/40 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-[10px] rounded-full h-10 px-4 transition-all"
                 title="Sign Out"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOutIcon className="w-4 h-4" />
               </Button>
             </div>
           </div>
@@ -127,7 +128,7 @@ export function SiteHeader() {
           isMounted && (
             <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm">
               <Link href={pathname.includes("/admin/login") ? "/" : "/admin/login"}>
-                {pathname.includes("/admin/login") ? "Home" : "Staff Portal"}
+                {pathname.includes("/admin/login") ? "Student Portal" : "Staff Portal"}
               </Link>
             </Button>
           )
