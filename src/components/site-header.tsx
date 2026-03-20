@@ -53,7 +53,7 @@ export function SiteHeader() {
               src={logo.imageUrl} 
               alt="NEU Logo" 
               fill
-              className="object-contain p-0.5"
+              className="object-contain p-1.5"
               data-ai-hint={logo.imageHint}
               priority
             />
@@ -72,7 +72,7 @@ export function SiteHeader() {
               <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-9 px-4 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm" suppressHydrationWarning>
                 <Link href="/">
                   <UserIcon className="w-3.5 h-3.5" />
-                  Visitor Portal
+                  Student Portal
                 </Link>
               </Button>
             )}
