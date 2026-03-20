@@ -1,7 +1,8 @@
+
 'use client';
 
 import Link from "next/link";
-import { LogOut, LayoutDashboard, User, Home } from "lucide-react";
+import { LogOut, LayoutDashboard, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -92,7 +93,7 @@ export function SiteHeader() {
             </Avatar>
 
             <div className="flex items-center gap-2">
-              {/* BACK TO STUDENT PORTAL BUTTON - Always show when logged in and not on the home page */}
+              {/* Always show Student Portal button if logged in and not on the home page */}
               {pathname !== "/" && (
                 <Button asChild variant="outline" className="bg-white text-primary border-none hover:bg-white/90 rounded-full h-10 px-4 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-xl transition-all">
                   <Link href="/">
@@ -102,8 +103,8 @@ export function SiteHeader() {
                 </Button>
               )}
 
-              {/* ADMIN PANEL BUTTON - Show to authorized users when they are on the kiosk view */}
-              {isAuthorized && pathname === "/" && (
+              {/* Always show Admin Panel button if admin and not in admin section */}
+              {isAuthorized && !pathname.startsWith('/admin') && (
                 <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-4 font-bold uppercase text-[10px] tracking-widest gap-2">
                   <Link href="/admin/dashboard">
                     <LayoutDashboard className="w-4 h-4" />
@@ -123,9 +124,11 @@ export function SiteHeader() {
             </div>
           </div>
         ) : (
-          isMounted && !pathname.includes("/admin/login") && (
+          isMounted && (
             <Button asChild variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-full h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2 shadow-sm">
-              <Link href="/admin/login">Staff Portal</Link>
+              <Link href={pathname.includes("/admin/login") ? "/" : "/admin/login"}>
+                {pathname.includes("/admin/login") ? "Home" : "Staff Portal"}
+              </Link>
             </Button>
           )
         )}
