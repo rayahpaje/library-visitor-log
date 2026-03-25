@@ -1,3 +1,11 @@
+<div class="section">
+  <h2>Live Application</h2>
+  <p>
+    <a href="https://library-visitor-log-84h8.vercel.app/">
+      Open NEU Library Visitor Log System
+    </a>
+  </p>
+</div>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -90,14 +98,7 @@
   </ol>
 </div>
 
-<div class="section">
-  <h2>Live Application</h2>
-  <p>
-    <a href="https://library-visitor-log-84h8.vercel.app/">
-      Open NEU Library Visitor Log System
-    </a>
-  </p>
-</div>
+
 
 </body>
 </html>
